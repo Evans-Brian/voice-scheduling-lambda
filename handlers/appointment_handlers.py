@@ -36,7 +36,7 @@ def handle_book_appointment(event: Dict[str, Any], platform_name: str) -> Dict[s
         }
     
     platform = PlatformFactory.get_platform(platform_name)
-    result = platform.attempt_booking_with_alternatives(
+    result = platform.book_appointment(
         name=name,
         timestamp=timestamp,
         phone_number=phone_number,
@@ -48,13 +48,42 @@ def handle_book_appointment(event: Dict[str, Any], platform_name: str) -> Dict[s
         'body': result
     }
 
-def handle_get_next_open(event, platform_type):
-    platform = PlatformFactory.get_platform(platform_type)
-    result = platform.get_available_slots(duration=30)
+def handle_get_availability(event: Dict[str, Any], platform_name: str) -> Dict[str, Any]:
+    """
+    Handle getting availability operation.
+    
+    Args:
+        event: Dict containing:
+            - timestamp: Optional string in format 'YYYY-MM-DDTHH:MM:SS'
+            - date: Optional string in format 'YYYY-MM-DD'
+            - duration: Optional integer, appointment duration in minutes
+        platform_name: String, name of the calendar platform to use
+    
+    Returns:
+        Dict containing:
+            - statusCode: Integer HTTP status code
+            - body: Dict containing availability information
+    """
+    platform = PlatformFactory.get_platform(platform_name)
+    
+    # Get optional parameters
+    duration = event.get('duration', 30)
+    date = event.get('date')
+    timestamp = event.get('timestamp')
+    
+    if date:
+        # If specific date is provided, use get_availability with date
+        result = platform.get_availability(duration=duration, date=date)
+    elif timestamp:
+        # If timestamp is provided, use get_next_availability
+        result = platform.get_next_availability(timestamp=timestamp, duration=duration)
+    else:
+        # If neither is provided, get next available day
+        result = platform.get_availability(duration=duration)
     
     return {
         'statusCode': 200,
-        'body': json.dumps(result)  # Convert dict to JSON string
+        'body': result
     }
 
 def handle_get_appointments(event: Dict[str, Any], platform_name: str) -> Dict[str, Any]:
@@ -94,12 +123,29 @@ def handle_get_appointments(event: Dict[str, Any], platform_name: str) -> Dict[s
     }
 
 def handle_cancel_appointment(event, platform_type):
+    """
+    Handle canceling an appointment.
+    
+    Args:
+        event: Dict containing:
+            - timestamp: String in format 'YYYY-MM-DDTHH:MM:SS'
+            - phone_number: String, customer's phone number
+        platform_type: String, name of the calendar platform to use
+    
+    Returns:
+        Dict containing:
+            - statusCode: Integer HTTP status code
+            - body: JSON string containing operation result
+    """
     platform = PlatformFactory.get_platform(platform_type)
-    result = platform.cancel_appointment(event_id=event['event_id'])
+    result = platform.cancel_appointment(
+        timestamp=event.get('timestamp'),
+        phone_number=event.get('phone_number')
+    )
     
     return {
-        'statusCode': 400,
-        'body': json.dumps(result)  # Convert dict to JSON string
+        'statusCode': 200,  # Changed from 400 to 200
+        'body': json.dumps(result)
     }
 
 def handle_reschedule_appointment(event: Dict[str, Any], platform_name: str) -> Dict[str, Any]:

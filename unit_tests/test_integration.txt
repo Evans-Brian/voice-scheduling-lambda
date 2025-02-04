@@ -95,7 +95,7 @@ def test_book_appointment_invalid_time():
         "business hours" in error_message
     ]), f"Should indicate business hours violation, got: {error_message}"
 
-def test_attempt_booking_with_alternatives():
+def test_attempt_booking():
     """
     Test booking attempt that returns alternative slots when original time is unavailable
     """

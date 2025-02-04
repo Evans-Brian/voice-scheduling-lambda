@@ -8,7 +8,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     Args:
         event: Dict containing:
-            - operation: String operation name ('book_appointment', 'get_next_open', 
+            - operation: String operation name ('book_appointment', 'get_availability', 
               'get_appointments', 'cancel_appointment', or 'reschedule_appointment')
             - platform: String platform name (required)
             - Additional operation-specific parameters (see individual handlers for details)

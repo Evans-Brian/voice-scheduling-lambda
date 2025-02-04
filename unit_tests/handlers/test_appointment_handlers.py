@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import json
 from handlers.appointment_handlers import (
     handle_book_appointment,
-    handle_get_next_open,
+    handle_get_availability,
     handle_get_appointments,
     handle_cancel_appointment,
     handle_reschedule_appointment
@@ -27,7 +27,7 @@ def test_book_appointment_success(mock_platform):
         'event_id': 'mock_event_123',
         'event_link': 'http://calendar/event123'
     }
-    mock_platform.attempt_booking_with_alternatives.return_value = mock_response
+    mock_platform.book_appointment.return_value = mock_response
     
     with patch('handlers.appointment_handlers.PlatformFactory') as mock_factory:
         mock_factory.get_platform.return_value = mock_platform
@@ -49,7 +49,7 @@ def test_book_appointment_success(mock_platform):
         assert body.get('success') is True
         assert 'event_id' in body
         assert 'event_link' in body
-        mock_platform.attempt_booking_with_alternatives.assert_called_once_with(
+        mock_platform.book_appointment.assert_called_once_with(
             name='John Doe',
             timestamp='2024-03-20T09:00:00',
             phone_number='+1234567890',
@@ -68,7 +68,7 @@ def test_book_appointment_slot_unavailable(mock_platform):
         ],
         'date': '2024-03-20'
     }
-    mock_platform.attempt_booking_with_alternatives.return_value = mock_response
+    mock_platform.book_appointment.return_value = mock_response
     
     with patch('handlers.appointment_handlers.PlatformFactory') as mock_factory:
         mock_factory.get_platform.return_value = mock_platform
@@ -91,7 +91,7 @@ def test_book_appointment_slot_unavailable(mock_platform):
         assert len(body['available_slots']) == 2
         assert body.get('date') == '2024-03-20'
 
-def test_get_next_open_slots(mock_platform):
+def test_get_availability_slots(mock_platform):
     """Test getting next available slots"""
     # Setup
     mock_response = {
@@ -103,13 +103,13 @@ def test_get_next_open_slots(mock_platform):
         ],
         'date': '2024-03-20'
     }
-    mock_platform.get_available_slots.return_value = mock_response
+    mock_platform.get_availability.return_value = mock_response
     
     with patch('handlers.appointment_handlers.PlatformFactory') as mock_factory:
         mock_factory.get_platform.return_value = mock_platform
         
         # Execute
-        result = handle_get_next_open({}, 'google')
+        result = handle_get_availability({}, 'google')
         
         # Assert
         assert isinstance(result, dict)
@@ -120,7 +120,7 @@ def test_get_next_open_slots(mock_platform):
         assert 'slots' in body
         assert len(body['slots']) == 2
         assert body['date'] == '2024-03-20'
-        mock_platform.get_available_slots.assert_called_once_with(duration=30)
+        mock_platform.get_availability.assert_called_once_with(duration=30)
 
 def test_get_appointments(mock_platform):
     """Test getting user appointments"""

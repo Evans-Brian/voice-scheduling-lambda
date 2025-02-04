@@ -5,7 +5,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, timedelta
 import logging
-from platforms.google_calendar import GoogleCalendarPlatform
+import json
+from handler import lambda_handler
 from constants import DEFAULT_START_HOUR
 
 # Force logging to stdout
@@ -20,8 +21,7 @@ logger.addHandler(handler)
 logger.propagate = False  # Prevent duplicate logs
 
 def test_reschedule_appointment_integration():
-    """Integration test for rescheduling an appointment"""
-    platform = GoogleCalendarPlatform()
+    """Integration test for rescheduling an appointment through the Lambda handler"""
     
     # Get tomorrow's date during business hours
     tomorrow = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
@@ -47,52 +47,94 @@ def test_reschedule_appointment_integration():
     logger.info(f"Original timestamp: {original_timestamp}")
     logger.info(f"New timestamp: {new_timestamp}")
     
-    # First book the appointment
-    result = platform.book_appointment(
-        name="Integration Test Appointment",
-        timestamp=original_timestamp,
-        phone_number="+1234567890",
-        duration=30
-    )
+    # First book the appointment using the handler
+    book_event = {
+        'operation': 'book_appointment',
+        'platform': 'google',
+        'name': "Integration Test Appointment",
+        'timestamp': original_timestamp,
+        'phone_number': "+1234567890",
+        'duration': 30
+    }
+    
+    result = lambda_handler(book_event, None)
     logger.info(f"Initial booking response: {result}")
     
     # Verify initial booking success
-    assert result['success'] == True, f"Initial booking failed: {result.get('message', 'No error message')}"
+    assert result['statusCode'] == 200, "Initial booking request failed"
+    booking_body = json.loads(result['body']) if isinstance(result['body'], str) else result['body']
+    assert booking_body['success'] == True, f"Initial booking failed: {booking_body.get('message', 'No error message')}"
     
     try:
-        # Now reschedule the appointment
-        reschedule_result = platform.reschedule_appointment(
-            name="Integration Test Appointment",
-            phone_number="+1234567890",
-            old_timestamp=original_timestamp,
-            new_timestamp=new_timestamp
-        )
+        # Now reschedule the appointment using the handler
+        reschedule_event = {
+            'operation': 'reschedule_appointment',
+            'platform': 'google',
+            'name': "Integration Test Appointment",
+            'phone_number': "+1234567890",
+            'old_timestamp': original_timestamp,
+            'new_timestamp': new_timestamp
+        }
+        
+        reschedule_result = lambda_handler(reschedule_event, None)
         logger.info(f"Reschedule response: {reschedule_result}")
         
         # Verify rescheduling success
-        assert reschedule_result['success'] == True, f"Rescheduling failed: {reschedule_result.get('message', 'No error message')}"
+        assert reschedule_result['statusCode'] == 200, "Reschedule request failed"
+        reschedule_body = json.loads(reschedule_result['body']) if isinstance(reschedule_result['body'], str) else reschedule_result['body']
+        assert reschedule_body['success'] == True, f"Rescheduling failed: {reschedule_body.get('message', 'No error message')}"
         
-        # Verify the original appointment was cancelled
-        original_appointment = platform.get_customer_appointments("+1234567890")
-        logger.info(f"Final appointments: {original_appointment}")
+        # Verify the appointment was rescheduled by getting current appointments
+        get_appointments_event = {
+            'operation': 'get_appointments',
+            'platform': 'google',
+            'phone_number': "+1234567890"
+        }
         
-        # Should only find one appointment at the new time
-        assert original_appointment['success'] == True, "Failed to get appointments"
-        assert len(original_appointment['appointments']) == 1, "Wrong number of appointments found"
-        assert original_appointment['appointments'][0]['start'].startswith(new_timestamp), \
-            f"Appointment not rescheduled correctly. Expected {new_timestamp}, got {original_appointment['appointments'][0]['start']}"
+        appointments_result = lambda_handler(get_appointments_event, None)
+        logger.info(f"Final appointments: {appointments_result}")
+        
+        # Verify the appointments
+        assert appointments_result['statusCode'] == 200, "Failed to get appointments"
+        appointments_body = json.loads(appointments_result['body']) if isinstance(appointments_result['body'], str) else appointments_result['body']
+        assert appointments_body['success'] == True, "Failed to get appointments"
+        assert len(appointments_body['appointments']) == 1, "Wrong number of appointments found"
+        assert appointments_body['appointments'][0]['start'].startswith(new_timestamp), \
+            f"Appointment not rescheduled correctly. Expected {new_timestamp}, got {appointments_body['appointments'][0]['start']}"
         
     finally:
+        logger.info("Cleaning up test appointments...")
         # Clean up: Cancel the appointment (try both times just in case)
+        cancel_event = {
+            'operation': 'cancel_appointment',
+            'platform': 'google',
+            'timestamp': original_timestamp,
+            'phone_number': "+1234567890"
+        }
+        
+        # Try to cancel original appointment
         try:
-            platform.cancel_appointment(timestamp=original_timestamp, phone_number="+1234567890")
+            cancel_result = lambda_handler(cancel_event, None)
+            cancel_body = json.loads(cancel_result['body']) if isinstance(cancel_result['body'], str) else cancel_result['body']
+            if cancel_body.get('success'):
+                logger.info("Successfully cleaned up original appointment")
+            else:
+                logger.warning(f"Original appointment cleanup failed: {cancel_body.get('message')}")
         except Exception as e:
             logger.warning(f"Failed to clean up original appointment: {str(e)}")
-            
+        
+        # Try to cancel rescheduled appointment
+        cancel_event['timestamp'] = new_timestamp
         try:
-            platform.cancel_appointment(timestamp=new_timestamp, phone_number="+1234567890")
+            cancel_result = lambda_handler(cancel_event, None)
+            cancel_body = json.loads(cancel_result['body']) if isinstance(cancel_result['body'], str) else cancel_result['body']
+            if cancel_body.get('success'):
+                logger.info("Successfully cleaned up rescheduled appointment")
+            else:
+                logger.warning(f"Rescheduled appointment cleanup failed: {cancel_body.get('message')}")
         except Exception as e:
             logger.warning(f"Failed to clean up rescheduled appointment: {str(e)}")
+    
             
     logger.info("=== End Debug Info ===\n")
 
