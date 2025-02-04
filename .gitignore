@@ -1,0 +1,33 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+
+# Testing
+.pytest_cache/
+
+# Lambda deployment packages
+lambda_deploy/
+lambda_deploy/*
+
+# IDE settings (optional, but recommended)
+.vscode/
+.idea/
+
+# AWS credentials (if any)
+*.pem
+
+# Google Calendar API credentials - all locations
+**/credentials.json
+**/token.pickle
+**/client_secret*.json
+**/oauth*.json
+**/client_secrets*.json
+.env
+*.credentials
+credentials/
+
+lambda_deploy/

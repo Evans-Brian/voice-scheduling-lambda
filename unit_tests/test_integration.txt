@@ -1,0 +1,124 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import pytest
+from datetime import datetime, timedelta
+from googleapiclient.discovery import build
+import handler
+from auth import get_credentials
+from constants import DEFAULT_START_HOUR, DEFAULT_END_HOUR, CALENDAR_ID, GOOGLE_CALENDAR_SCOPES
+import json
+
+def test_book_appointment():
+    """
+    Integration test for booking an appointment.
+    Tests both successful booking and duplicate booking handling.
+    """
+    # Use a fixed date and time: January 30, 2025 at 10:00 AM
+    test_time = datetime(2025, 1, 30, 10, 0, 0)
+    timestamp = test_time.strftime('%Y-%m-%dT%H:%M:%S')
+    
+    event = {
+        'operation': 'book_appointment',
+        'platform': 'google',
+        'name': 'Test Appointment',
+        'timestamp': timestamp,
+        'duration': 30,
+        'phone_number': '+1234567890'
+    }
+    
+    try:
+        # First booking attempt
+        result1 = handler.lambda_handler(event, None)
+        assert result1['statusCode'] == 200, "First booking should succeed"
+        
+        body1 = json.loads(result1['body'])
+        assert body1['success'] == True, "First booking should be successful"
+        assert 'event_id' in body1, "Should return event ID"
+        event_id = body1['event_id']
+        
+        # Try to book the same slot again
+        event['name'] = "Duplicate Appointment"
+        result2 = handler.lambda_handler(event, None)
+        
+        body2 = json.loads(result2['body'])
+        assert body2['success'] == False, "Duplicate booking should fail"
+        assert "already booked" in body2['message'].lower(), "Should indicate slot is booked"
+        
+        # Clean up - Delete the test event
+        try:
+            creds = get_credentials()
+            service = build('calendar', 'v3', credentials=creds)
+            service.events().delete(
+                calendarId=CALENDAR_ID,
+                eventId=event_id
+            ).execute()
+        except Exception as e:
+            pytest.fail(f"Could not delete test event: {str(e)}")
+        
+    except Exception as e:
+        pytest.fail(f"Integration test failed: {str(e)}")
+
+def test_book_appointment_invalid_time():
+    """
+    Test booking with invalid time (outside business hours)
+    """
+    # Use January 30, 2025 at 7:00 AM (outside business hours)
+    test_time = datetime(2025, 1, 30, 7, 0, 0)
+    timestamp = test_time.strftime('%Y-%m-%dT%H:%M:%S')
+    
+    event = {
+        'operation': 'book_appointment',
+        'platform': 'google',
+        'name': 'Early Appointment',
+        'timestamp': timestamp,
+        'duration': 30,
+        'phone_number': '+1234567890'
+    }
+    
+    try:
+        creds = get_credentials()
+        service = build('calendar', 'v3', credentials=creds)
+        # Try a simple API call to verify permissions
+        service.calendarList().list().execute()
+    except Exception as e:
+        pytest.skip(f"Skipping test due to authentication issues: {str(e)}")
+    
+    result = handler.lambda_handler(event, None)
+    body = json.loads(result['body'])
+    
+    assert body['success'] == False, "Booking outside business hours should fail"
+    error_message = body['message'].lower()
+    assert any([
+        f"appointments must be between {DEFAULT_START_HOUR}:00 and {DEFAULT_END_HOUR}:00" in error_message,
+        "business hours" in error_message
+    ]), f"Should indicate business hours violation, got: {error_message}"
+
+def test_attempt_booking_with_alternatives():
+    """
+    Test booking attempt that returns alternative slots when original time is unavailable
+    """
+    # Use a time that's already booked
+    test_time = datetime(2025, 1, 30, 10, 0, 0)
+    timestamp = test_time.strftime('%Y-%m-%dT%H:%M:%S')
+    
+    event = {
+        'operation': 'book_appointment',
+        'platform': 'google',
+        'name': 'Test Appointment',
+        'timestamp': timestamp,
+        'duration': 30,
+        'phone_number': '+1234567890'
+    }
+    
+    result = handler.lambda_handler(event, None)
+    body = json.loads(result['body'])
+    
+    if not body['success']:
+        assert 'available_slots' in body, "Should include alternative slots"
+        assert isinstance(body['available_slots'], list), "Available slots should be a list"
+        assert len(body['available_slots']) > 0, "Should have some available slots"
+
+if __name__ == '__main__':
+    pytest.main([__file__, '-v', '-s'])
