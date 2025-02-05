@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from datetime import datetime, timedelta
 import logging
 import json
-from handler import lambda_handler
+from lambda_function import lambda_handler
 from constants import DEFAULT_START_HOUR
 
 # Force logging to stdout

@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 from unittest.mock import Mock, patch
-from handler import lambda_handler
+from lambda_function import lambda_handler
 
 def test_missing_operation():
     """Test handler returns 400 when operation is missing"""
@@ -77,7 +77,7 @@ def test_successful_booking():
     
     # Stack multiple patches to catch all possible import paths
     with patch('handlers.HANDLERS', mock_handlers), \
-         patch('handler.HANDLERS', mock_handlers), \
+         patch('lambda_function.HANDLERS', mock_handlers), \
          patch('handlers.appointment_handlers.handle_book_appointment', mock_handler):
         
         result = lambda_handler(event, None)
@@ -111,7 +111,7 @@ def test_general_error_handling():
     
     # Stack multiple patches to catch all possible import paths
     with patch('handlers.HANDLERS', mock_handlers), \
-         patch('handler.HANDLERS', mock_handlers), \
+         patch('lambda_function.HANDLERS', mock_handlers), \
          patch('handlers.appointment_handlers.handle_book_appointment', mock_handler):
         
         result = lambda_handler(event, None)
@@ -137,7 +137,7 @@ def test_value_error_handling():
     
     # Stack multiple patches to catch all possible import paths
     with patch('handlers.HANDLERS', mock_handlers), \
-         patch('handler.HANDLERS', mock_handlers), \
+         patch('lambda_function.HANDLERS', mock_handlers), \
          patch('handlers.appointment_handlers.handle_book_appointment', mock_handler):
         
         result = lambda_handler(event, None)

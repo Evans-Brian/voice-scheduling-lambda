@@ -30,4 +30,10 @@ lambda_deploy/*
 *.credentials
 credentials/
 
+
+# Deployment files
+deployment_package.zip
+package/
+temp_venv/
 lambda_deploy/
+deployment_package/

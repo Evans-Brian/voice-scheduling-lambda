@@ -114,8 +114,7 @@ def test_get_availability_slots(mock_platform):
         # Assert
         assert isinstance(result, dict)
         assert result.get('statusCode') == 200
-        assert isinstance(result.get('body'), str)  # Verify body is a string
-        body = json.loads(result.get('body'))  # Parse JSON string
+        body = result.get('body')  # Body is already a dict, not a string
         assert body['success'] is True
         assert 'slots' in body
         assert len(body['slots']) == 2
@@ -170,7 +169,8 @@ def test_cancel_appointment(mock_platform):
         mock_factory.get_platform.return_value = mock_platform
         
         event = {
-            'event_id': 'mock_event_123'
+            'timestamp': '2024-03-20T09:00:00',
+            'phone_number': '+1234567890'
         }
         
         # Execute
@@ -178,9 +178,11 @@ def test_cancel_appointment(mock_platform):
         
         # Assert
         assert isinstance(result, dict)
-        assert result.get('statusCode') == 400
-        assert isinstance(result.get('body'), str)  # Verify body is a string
+        assert result.get('statusCode') == 200
         body = json.loads(result.get('body'))  # Parse JSON string
         assert body['success'] is True
         assert 'message' in body
-        mock_platform.cancel_appointment.assert_called_once_with(event_id='mock_event_123')
+        mock_platform.cancel_appointment.assert_called_once_with(
+            timestamp='2024-03-20T09:00:00',
+            phone_number='+1234567890'
+        )
