@@ -10,7 +10,7 @@ from lambda_function import lambda_handler
 def test_missing_operation():
     """Test handler returns 400 when no operation key is present"""
     event = {
-        'platform': 'google',
+        'google': '',
         'name': 'John Doe'
     }
     
@@ -35,7 +35,7 @@ def test_unknown_operation():
     """Test handler returns 400 for unknown operation"""
     event = {
         'invalid_operation': 'test',
-        'platform': 'google'
+        'google': ''
     }
     
     result = lambda_handler(event, None)
@@ -47,7 +47,7 @@ def test_successful_booking():
     """Test successful booking operation"""
     event = {
         'book_appointment': 'create',
-        'platform': 'google',
+        'google': '',
         'name': 'John Doe',
         'timestamp': '2024-03-20T09:00:00',
         'phone_number': '+1234567890'
@@ -95,7 +95,7 @@ def test_general_error_handling():
     """Test handler returns 500 for unexpected errors"""
     event = {
         'book_appointment': 'create',
-        'platform': 'google',
+        'google': '',
         'name': 'John Doe',
         'timestamp': '2024-03-20T09:00:00',
         'phone_number': '+1234567890'
@@ -124,7 +124,7 @@ def test_value_error_handling():
     """Test handler returns 400 for ValueError"""
     event = {
         'book_appointment': 'create',
-        'platform': 'google'
+        'google': ''
     }
     
     # Create a mock with ValueError side_effect

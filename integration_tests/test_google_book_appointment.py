@@ -32,7 +32,7 @@ def test_book_appointment_integration(caplog):
     # First check availability
     availability_event = {
         'get_availability': 'get_slots',
-        'platform': 'google',
+        'google': '',
         'duration': 30,
         'date': tomorrow.strftime('%Y-%m-%d')
     }
@@ -50,7 +50,7 @@ def test_book_appointment_integration(caplog):
     # Book the appointment
     booking_event = {
         'book_appointment': 'create',
-        'platform': 'google',
+        'google': '',
         'name': "Integration Test Appointment",
         'timestamp': timestamp,
         'phone_number': "+1234567890",
@@ -73,7 +73,7 @@ def test_book_appointment_integration(caplog):
     try:
         cancel_event = {
             'cancel_appointment': 'delete',
-            'platform': 'google',
+            'google': '',
             'timestamp': timestamp,
             'phone_number': "+1234567890"
         }
@@ -103,7 +103,7 @@ def test_book_appointment_conflict_integration(caplog):
     # Book first appointment
     booking_event1 = {
         'book_appointment': 'create',
-        'platform': 'google',
+        'google': '',
         'name': "Integration Test Appointment 1",
         'timestamp': timestamp,
         'phone_number': "+1234567890",
@@ -125,7 +125,7 @@ def test_book_appointment_conflict_integration(caplog):
     # Try to book second appointment at same time
     booking_event2 = {
         'book_appointment': 'create',
-        'platform': 'google',
+        'google': '',
         'name': "Integration Test Appointment 2",
         'timestamp': timestamp,
         'phone_number': "+0987654321",
@@ -146,7 +146,7 @@ def test_book_appointment_conflict_integration(caplog):
     try:
         cancel_event = {
             'cancel_appointment': 'delete',
-            'platform': 'google',
+            'google': '',
             'timestamp': timestamp,
             'phone_number': "+1234567890"
         }

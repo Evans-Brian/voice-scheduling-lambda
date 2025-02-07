@@ -25,8 +25,13 @@ def lambda_handler(event, context):
                 'body': json.dumps('Operation is required')
             }
         
-        # Check for required platform
-        platform = event.get('platform')
+        # Find platform from keys
+        platform = None
+        for key in event.keys():
+            if key in ['google']:  # Add other platforms as needed
+                platform = key
+                break
+        
         if not platform:
             return {
                 'statusCode': 400,
