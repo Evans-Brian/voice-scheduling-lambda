@@ -40,7 +40,7 @@ def test_get_appointments():
     try:
         # First create a test appointment
         book_event = {
-            'operation': 'book_appointment',
+            'book_appointment': 'create',
             'platform': 'google',
             'name': "Get Appointments Test",
             'timestamp': timestamp,
@@ -58,7 +58,7 @@ def test_get_appointments():
         
         # Get all appointments
         get_event = {
-            'operation': 'get_appointments',
+            'get_appointments': 'list',
             'platform': 'google',
             'phone_number': phone_number
         }
@@ -91,7 +91,7 @@ def test_get_appointments():
         # Clean up: Cancel the test appointment
         logger.info("Cleaning up test appointment...")
         cancel_event = {
-            'operation': 'cancel_appointment',
+            'cancel_appointment': 'delete',
             'platform': 'google',
             'timestamp': timestamp,
             'phone_number': phone_number

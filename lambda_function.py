@@ -2,24 +2,23 @@ from typing import Any, Dict
 import json
 from handlers import HANDLERS
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """
-    AWS Lambda handler function for calendar operations.
-    
-    Args:
-        event: Dict containing:
-            - operation: String operation name ('book_appointment', 'get_availability', 
-              'get_appointments', 'cancel_appointment', or 'reschedule_appointment')
-            - platform: String platform name (required)
-            - Additional operation-specific parameters (see individual handlers for details)
-        context: AWS Lambda context
-    
-    Returns:
-        dict: Response with statusCode and body
-    """
+def lambda_handler(event, context):
+    """Handle both direct Lambda invocations and API Gateway events"""
     try:
-        # Check for required operation
-        operation = event.get('operation')
+        # Check if this is an API Gateway event
+        if event.get('httpMethod'):
+            # Parse the body from API Gateway
+            body = json.loads(event.get('body', '{}'))
+            # Use body as the event
+            event = body
+        
+        # Find the operation from the keys in the event
+        operation = None
+        for key in HANDLERS.keys():
+            if key in event:
+                operation = key
+                break
+        
         if not operation:
             return {
                 'statusCode': 400,

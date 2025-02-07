@@ -37,7 +37,7 @@ def test_get_next_availability():
     
     # Get next availability
     event = {
-        'operation': 'get_availability',
+        'get_availability': 'next',  # Changed from operation to key
         'platform': 'google',
         'timestamp': timestamp
     }
@@ -71,7 +71,7 @@ def test_get_specific_date_availability():
     
     # Get availability for specific date
     event = {
-        'operation': 'get_availability',
+        'get_availability': 'date',  # Changed from operation to key
         'platform': 'google',
         'date': target_date
     }

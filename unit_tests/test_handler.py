@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from lambda_function import lambda_handler
 
 def test_missing_operation():
-    """Test handler returns 400 when operation is missing"""
+    """Test handler returns 400 when no operation key is present"""
     event = {
         'platform': 'google',
         'name': 'John Doe'
@@ -22,7 +22,7 @@ def test_missing_operation():
 def test_missing_platform():
     """Test handler returns 400 when platform is missing"""
     event = {
-        'operation': 'book_appointment',
+        'book_appointment': 'create',
         'name': 'John Doe'
     }
     
@@ -34,19 +34,19 @@ def test_missing_platform():
 def test_unknown_operation():
     """Test handler returns 400 for unknown operation"""
     event = {
-        'operation': 'invalid_operation',
+        'invalid_operation': 'test',
         'platform': 'google'
     }
     
     result = lambda_handler(event, None)
     assert result['statusCode'] == 400
     body = json.loads(result['body'])
-    assert 'Unknown operation' in body, f"Expected error message not found in response: {body}"
+    assert 'Operation is required' in body, f"Expected error message not found in response: {body}"
 
 def test_successful_booking():
     """Test successful booking operation"""
     event = {
-        'operation': 'book_appointment',
+        'book_appointment': 'create',
         'platform': 'google',
         'name': 'John Doe',
         'timestamp': '2024-03-20T09:00:00',
@@ -94,7 +94,7 @@ def test_successful_booking():
 def test_general_error_handling():
     """Test handler returns 500 for unexpected errors"""
     event = {
-        'operation': 'book_appointment',
+        'book_appointment': 'create',
         'platform': 'google',
         'name': 'John Doe',
         'timestamp': '2024-03-20T09:00:00',
@@ -123,7 +123,7 @@ def test_general_error_handling():
 def test_value_error_handling():
     """Test handler returns 400 for ValueError"""
     event = {
-        'operation': 'book_appointment',
+        'book_appointment': 'create',
         'platform': 'google'
     }
     

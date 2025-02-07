@@ -49,7 +49,7 @@ def test_reschedule_appointment_integration():
     
     # First book the appointment using the handler
     book_event = {
-        'operation': 'book_appointment',
+        'book_appointment': 'create',
         'platform': 'google',
         'name': "Integration Test Appointment",
         'timestamp': original_timestamp,
@@ -68,7 +68,7 @@ def test_reschedule_appointment_integration():
     try:
         # Now reschedule the appointment using the handler
         reschedule_event = {
-            'operation': 'reschedule_appointment',
+            'reschedule_appointment': 'update',
             'platform': 'google',
             'name': "Integration Test Appointment",
             'phone_number': "+1234567890",
@@ -86,7 +86,7 @@ def test_reschedule_appointment_integration():
         
         # Verify the appointment was rescheduled by getting current appointments
         get_appointments_event = {
-            'operation': 'get_appointments',
+            'get_appointments': 'list',
             'platform': 'google',
             'phone_number': "+1234567890"
         }
@@ -106,7 +106,7 @@ def test_reschedule_appointment_integration():
         logger.info("Cleaning up test appointments...")
         # Clean up: Cancel the appointment (try both times just in case)
         cancel_event = {
-            'operation': 'cancel_appointment',
+            'cancel_appointment': 'delete',
             'platform': 'google',
             'timestamp': original_timestamp,
             'phone_number': "+1234567890"
