@@ -12,7 +12,7 @@ def handle_book_appointment(event: Dict[str, Any], platform_name: str) -> Dict[s
             - timestamp: String in format 'YYYY-MM-DDTHH:MM:SS', desired appointment time
             - phone_number: String, customer's phone number
             - duration: Integer (optional), appointment duration in minutes, defaults to 30
-        platform_name: String, name of the calendar platform to use
+        "platform_name": String, name of the calendar platform to use. Key not value
     
     Returns:
         Dict containing:
@@ -24,6 +24,7 @@ def handle_book_appointment(event: Dict[str, Any], platform_name: str) -> Dict[s
                 - event_link: String (if success), URL to the calendar event
                 - available_slots: List (if booking failed), alternative available time slots
     """
+    print(event)
     name = event.get('name')
     timestamp = event.get('timestamp')
     phone_number = event.get('phone_number')

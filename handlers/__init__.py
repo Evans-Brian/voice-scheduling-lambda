@@ -14,3 +14,5 @@ HANDLERS = {
     'cancel_appointment': handle_cancel_appointment,
     'reschedule_appointment': handle_reschedule_appointment
 } 
+
+PLATFORMS = ['google']

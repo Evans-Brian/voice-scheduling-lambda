@@ -11,19 +11,26 @@ def get_credentials():
     Returns:
         Credentials, the obtained credential.
     """
+    # Use /tmp directory for Lambda
+    token_path = '/tmp/token.pickle'
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
+    
+    if os.path.exists(token_path):
+        with open(token_path, 'rb') as token:
             creds = pickle.load(token)
     
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            # For local development, fall back to project directory
+            creds_file = ('credentials.json' if os.path.exists('credentials.json') 
+                         else '/tmp/credentials.json')
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', GOOGLE_CALENDAR_SCOPES)
+                creds_file, GOOGLE_CALENDAR_SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
+        # Save to /tmp for Lambda
+        with open(token_path, 'wb') as token:
             pickle.dump(creds, token)
     
     return creds 

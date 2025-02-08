@@ -57,6 +57,7 @@ def create_deployment_package(recreate_venv=False):
         shutil.copy('constants.py', f'{package_dir}/constants.py')
         shutil.copy('auth.py', f'{package_dir}/auth.py')
         shutil.copy('token.pickle', os.path.join(package_dir, 'token.pickle'))
+        shutil.copy2('credentials.json', package_dir)
         
         # Install dependencies to the package directory using the virtual environment
         subprocess.check_call([

@@ -26,7 +26,7 @@ def test_get_availability():
     # Get tomorrow's date during business hours
     tomorrow = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     timestamp = tomorrow.replace(
-        hour=DEFAULT_START_HOUR + 1,  # 1 hour after opening
+        hour=DEFAULT_START_HOUR + 1,
         minute=0,
         second=0,
         microsecond=0
@@ -37,7 +37,7 @@ def test_get_availability():
     
     # Get next availability
     event = {
-        'get_availability': 'next',
+        'get_availability': '',
         'google': '', 
         'timestamp': timestamp
     }
@@ -50,8 +50,11 @@ def test_get_availability():
     body = json.loads(result['body']) if isinstance(result['body'], str) else result['body']
     assert body['success'] == True, f"Getting availability failed: {body.get('message', 'No error message')}"
     assert 'slots' in body, "No slots in response"
-    assert body['slots'] == 'Available February 08: 9AM to 4:30PM'
     
+    # Format expected date string
+    expected_date = tomorrow.strftime('%B %d')  # e.g. "February 08"
+    expected_slots = f'Available {expected_date}: 9AM to 4:30PM'
+    assert body['slots'] == expected_slots, f"Expected slots to be '{expected_slots}', got '{body['slots']}'"
     
     logger.info("=== Next Availability Test Passed ===\n")
 
@@ -59,7 +62,8 @@ def test_get_availability_specific_date():
     """Integration test for getting availability on a specific date"""
     
     # Get date 2 days from now
-    target_date = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d')
+    target_date_obj = datetime.now() + timedelta(days=2)
+    target_date = target_date_obj.strftime('%Y-%m-%d')
     
     logger.info("\n=== Testing Specific Date Availability ===")
     logger.info(f"Checking availability for date: {target_date}")
@@ -80,8 +84,10 @@ def test_get_availability_specific_date():
     assert body['success'] == True, f"Getting availability failed: {body.get('message', 'No error message')}"
     assert 'slots' in body, "No slots in response"
     
-    # Verify slot format if any slots are available
-    assert body['slots'] == 'Available February 09: 9AM to 4:30PM'
+    # Format expected date string
+    expected_date = target_date_obj.strftime('%B %d')  # e.g. "February 09"
+    expected_slots = f'Available {expected_date}: 9AM to 4:30PM'
+    assert body['slots'] == expected_slots, f"Expected slots to be '{expected_slots}', got '{body['slots']}'"
     
     logger.info("=== Specific Date Availability Test Passed ===\n")
 
