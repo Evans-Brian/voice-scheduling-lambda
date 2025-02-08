@@ -2,9 +2,33 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import List, Dict
 from constants import DEFAULT_START_HOUR, DEFAULT_END_HOUR
+import pytz
 
 class BookingPlatform(ABC):
     """Base class for all booking platform integrations"""
+    
+    def __init__(self):
+        self.timezone = pytz.timezone('America/New_York')  # EST/EDT timezone
+    
+    def _strip_timezone(self, dt_str: str) -> datetime:
+        """
+        Helper method to convert datetime string to naive datetime object in local time.
+        Handles both UTC ('Z') and offset timezone formats (e.g., '-04:00')
+        """
+        # If the string ends with 'Z', convert to offset format
+        if dt_str.endswith('Z'):
+            dt_str = dt_str.replace('Z', '+00:00')
+        
+        # Parse with timezone info
+        utc_dt = datetime.fromisoformat(dt_str)
+        
+        # Convert to EST
+        if utc_dt.tzinfo is None:
+            utc_dt = pytz.utc.localize(utc_dt)
+        local_dt = utc_dt.astimezone(self.timezone)
+        
+        # Return naive datetime in local time
+        return local_dt.replace(tzinfo=None)
     
     @abstractmethod
     def book_appointment(self, name: str, timestamp: str, phone_number: str, duration: int = 30) -> dict:
@@ -23,27 +47,6 @@ class BookingPlatform(ABC):
                 message: str
                 available_slots: List[dict] (if failure)
                 date: str (if failure) in format 'YYYY-MM-DD'
-        """
-        pass
-    
-    @abstractmethod
-    def get_next_availability(self, timestamp: str, duration: int = 30) -> dict:
-        """
-        Get all available time slots for the next available day, starting from the given timestamp.
-        
-        Args:
-            timestamp: String in format 'YYYY-MM-DDTHH:MM:SS'
-            duration: Integer minutes for appointment duration (default 30)
-        
-        Returns:
-            dict with:
-                success: bool
-                message: str
-                slots: List of available time slots (if success)
-                    Each slot has:
-                        start: String time in format 'HH:MM'
-                        end: String time in format 'HH:MM'
-                date: String date in format 'YYYY-MM-DD' (if success)
         """
         pass
     
@@ -105,25 +108,51 @@ class BookingPlatform(ABC):
         """
         pass
     
-    def _combine_events(self, slots: List[Dict[str, str]], duration: int = 30) -> List[Dict[str, str]]:
+    def _combine_events(self, slots: List[Dict[str, str]], date: str, duration: int = 30) -> str:
         """
-        Combines 4 or more consecutive time slots into single slots.
-        Subtracts duration from end time of combined slots.
+        Combines 4 or more consecutive time slots and returns a natural language description.
+        Single slots are shown as start time only, consecutive slots shown as range.
         
         Args:
             slots: List of dicts with 'start' and 'end' times in 'HH:MM' format
+            date: String date in format 'YYYY-MM-DD'
             duration: Integer minutes for appointment duration (default 30)
         
         Returns:
-            list: Combined time slots with adjusted end times
+            str: Natural language description of available times
         """
         if not slots:
-            return []
+            return "No available times found"
         
+        # Format the date
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        formatted_date = date_obj.strftime('%B %d')  # e.g., "March 20"
         # Sort slots by start time
         sorted_slots = sorted(slots, key=lambda x: x['start'])
         
-        combined_slots = []
+
+        # Convert time to 12-hour format
+        def format_time(time_str: str) -> str:
+            """
+            Convert 24-hour time string to 12-hour format with minutes when needed.
+            Examples:
+                "14:30" -> "2:30PM"
+                "09:00" -> "9AM"
+                "15:45" -> "3:45PM"
+                "12:00" -> "12PM"
+            """
+            time_obj = datetime.strptime(time_str, '%H:%M')
+            hour = time_obj.strftime('%I').lstrip('0')  # Remove leading zero
+            minutes = time_obj.strftime('%M')
+            ampm = time_obj.strftime('%p')
+            
+            # Only include minutes if they're not zero
+            if minutes == '00':
+                return f"{hour}{ampm}"
+            return f"{hour}:{minutes}{ampm}"
+        
+        # Group consecutive slots
+        groups = []
         current_group = [sorted_slots[0]]
         
         for i in range(1, len(sorted_slots)):
@@ -131,34 +160,27 @@ class BookingPlatform(ABC):
             if sorted_slots[i]['start'] == current_group[-1]['end']:
                 current_group.append(sorted_slots[i])
             else:
-                # Process the current group if it exists
-                if len(current_group) >= 4:
-                    # Calculate end time minus duration
-                    end_time = datetime.strptime(current_group[-1]['end'], '%H:%M')
-                    adjusted_end = (end_time - timedelta(minutes=duration)).strftime('%H:%M')
-                    
-                    combined_slots.append({
-                        'start': current_group[0]['start'],
-                        'end': adjusted_end
-                    })
-                else:
-                    combined_slots.extend(current_group)
+                groups.append(current_group)
                 current_group = [sorted_slots[i]]
+        groups.append(current_group)  # Add the last group
         
-        # Process the last group
-        if len(current_group) >= 4:
-            # Calculate end time minus duration
-            end_time = datetime.strptime(current_group[-1]['end'], '%H:%M')
-            adjusted_end = (end_time - timedelta(minutes=duration)).strftime('%H:%M')
-            
-            combined_slots.append({
-                'start': current_group[0]['start'],
-                'end': adjusted_end
-            })
-        else:
-            combined_slots.extend(current_group)
+        # Format each group into a string
+        time_strings = []
+        for group in groups:
+            if len(group) >= 4:
+                # For 4 or more consecutive slots, show range
+                start = format_time(group[0]['start'])
+                # Get the start time of last slot
+                end = format_time(group[-1]['start'])
+                time_strings.append(f"{start} to {end}")
+            else:
+                # For individual slots, just show start time
+                time_strings.append(format_time(group[0]['start']))
         
-        return combined_slots
+        # Combine all times with commas
+        times = ", ".join(time_strings)
+        
+        return f"Available {formatted_date}: {times}"
     
     def get_available_times(self, timestamp: str, booking_result: dict, duration: int = 30) -> dict:
         """
@@ -182,8 +204,8 @@ class BookingPlatform(ABC):
         if booking_result.get('bookedEvents') and booking_result['bookedEvents'].get('items'):
             for event in booking_result['bookedEvents']['items']:
                 if 'dateTime' in event['start']:  # Skip all-day events
-                    start = datetime.strptime(event['start']['dateTime'].replace('-05:00', ''), '%Y-%m-%dT%H:%M:%S')
-                    end = datetime.strptime(event['end']['dateTime'].replace('-05:00', ''), '%Y-%m-%dT%H:%M:%S')
+                    start = self._strip_timezone(event['start']['dateTime'])
+                    end = self._strip_timezone(event['end']['dateTime'])
                     booked_slots.append((start.strftime('%H:%M'), end.strftime('%H:%M')))
         
         # Generate all possible time slots between business hours
@@ -223,8 +245,12 @@ class BookingPlatform(ABC):
             
             current_time += timedelta(minutes=30)  # Move to next slot
         
-        # Combine consecutive slots
-        combined_slots = self._combine_events(available_slots, duration)
+        # Get available slots
+        combined_slots = self._combine_events(
+            available_slots, 
+            requested_date.strftime('%Y-%m-%d'),
+            duration
+        )
         
         return {
             'slots': combined_slots,

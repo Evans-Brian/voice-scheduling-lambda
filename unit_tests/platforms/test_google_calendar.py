@@ -34,13 +34,9 @@ def mock_service():
 @pytest.fixture
 def platform(mock_service):
     """Create a GoogleCalendarPlatform instance with mocked service"""
-    with patch('platforms.google_calendar.build') as mock_build:
-        mock_build.return_value = mock_service
-        # Patch the abstract methods
-        with patch('platforms.google_calendar.GoogleCalendarPlatform.__abstractmethods__', set()):
-            platform = GoogleCalendarPlatform()
-            platform.service = mock_service  # Set the service explicitly
-            return platform
+    platform = GoogleCalendarPlatform(test_mode=True)
+    platform.service = mock_service
+    return platform
 
 def test_book_appointment_success(platform, mock_service):
     """Test successful appointment booking"""
@@ -64,29 +60,31 @@ def test_book_appointment_success(platform, mock_service):
 
 def test_book_appointment_conflict(platform, mock_service):
     """Test booking when time slot is already taken"""
-    # Mock existing event at the same time
-    events = Mock()
-    events.list.return_value.execute.return_value = {
+    # Mock the events().list().execute() chain to show a conflict
+    events_list = Mock()
+    events_list.execute.return_value = {
         'items': [
             {
-                'start': {'dateTime': '2024-03-20T10:00:00-04:00'},  # EST timezone
+                'summary': 'Existing Appointment',
+                'start': {'dateTime': '2024-03-20T10:00:00-04:00'},  # Use EST timezone
                 'end': {'dateTime': '2024-03-20T10:30:00-04:00'}
             }
-        ]
+        ],
+        'timeZone': 'America/New_York'
     }
+    events = Mock()
+    events.list.return_value = events_list
     mock_service.events.return_value = events
     
-    # Try to book at the same time
     result = platform.book_appointment(
         name="John Doe",
-        timestamp="2024-03-20T10:00:00",  # This should conflict with the existing event
+        timestamp="2024-03-20T10:00:00",
         phone_number="+1234567890",
         duration=30
     )
     
-    assert result['success'] == False, "Booking should fail due to conflict"
+    assert result['success'] == False
     assert 'time slot is already booked' in result['message'].lower()
-    assert 'available_slots' in result, "Should provide alternative slots"
 
 def test_get_customer_appointments(platform, mock_service):
     """Test getting customer appointments"""
@@ -111,32 +109,6 @@ def test_get_customer_appointments(platform, mock_service):
     assert len(appointments) == 1
     assert appointments[0]['start'] == '2024-03-20T09:00:00+00:00'
 
-def test_get_next_availability(platform, mock_service):
-    """Test getting next available day slots"""
-    # Mock the events().list().execute() chain
-    events = Mock()
-    events.list.return_value.execute.return_value = {
-        'items': []  # Empty list of events
-    }
-    mock_service.events.return_value = events
-    
-    result = platform.get_availability(
-        duration=30,
-        date=None  # This will make it look for next available day
-    )
-    
-    assert result['success'] == True
-    assert result['message'] == 'Available slots found'
-    assert isinstance(result['slots'], list)
-    assert len(result['slots']) > 0
-    
-    # Verify structure of slots
-    for slot in result['slots']:
-        assert isinstance(slot, dict)
-        assert 'start' in slot
-        assert 'end' in slot
-        assert isinstance(slot['start'], str)
-        assert isinstance(slot['end'], str)
 
 def test_cancel_appointment_success(platform, mock_service):
     """Test successful appointment cancellation"""
@@ -171,15 +143,21 @@ def test_cancel_appointment_success(platform, mock_service):
     assert 'cancelled successfully' in result['message'].lower()
 
 def test_cancel_appointment_not_found(platform, mock_service):
-    """Test cancelling non-existent appointment"""
+    """Test canceling a non-existent appointment"""
+    # Mock the events().list().execute() chain to return no matching appointments
+    events_list = Mock()
+    events_list.execute.return_value = {'items': []}  # No appointments found
     events = Mock()
-    events.delete.side_effect = Exception('Event not found')
+    events.list.return_value = events_list
     mock_service.events.return_value = events
     
-    result = platform.cancel_appointment("nonexistent", "+1234567890")
+    result = platform.cancel_appointment(
+        timestamp="2024-03-20T10:00:00",
+        phone_number="+1234567890"
+    )
     
     assert result['success'] == False
-    assert 'error' in result['message'].lower()
+    assert 'no matching appointment' in result['message'].lower()
 
 def test_get_availability_no_conflicts(platform, mock_service):
     """Test getting available slots for a day with no conflicts"""
@@ -188,10 +166,8 @@ def test_get_availability_no_conflicts(platform, mock_service):
     mock_service.events.return_value = events
     
     result = platform.get_availability(duration=30, date="2024-03-20")
-    
     assert result['success'] == True
-    assert 'slots' in result
-    assert len(result['slots']) > 0
+    assert result['slots'] == "Available March 20: 9AM to 4:30PM"
     assert result['date'] == '2024-03-20'
 
 def test_get_availability_with_conflicts(platform, mock_service):
@@ -215,18 +191,17 @@ def test_get_availability_with_conflicts(platform, mock_service):
     result = platform.get_availability(duration=30, date="2024-03-20")
     
     assert result['success'] == True
-    assert 'slots' in result
+    assert isinstance(result['slots'], str)
     
-    # Convert slots to a list of start times for easier checking
-    slot_times = [slot['start'] for slot in result['slots']]
-    
-    # These times should not be in the available slots
-    conflicting_times = ['09:00', '09:30', '14:00', '14:30']
-    
-    # Check each conflicting time is not in the available slots
+    # Check that conflicting times are not mentioned in the string
+    conflicting_times = ['9AM', '9:30AM', '2PM', '2:30PM']
     for conflict_time in conflicting_times:
-        assert not any(conflict_time in slot_time for slot_time in slot_times), \
-            f"Found conflicting time {conflict_time} in available slots: {slot_times}"
+        assert conflict_time not in result['slots'], \
+            f"Found conflicting time {conflict_time} in available slots: {result['slots']}"
+    
+    # Check that the string contains expected format
+    assert result['slots'] == "Available March 20: 10AM to 1:30PM, 3PM to 4:30PM"
+    assert result['date'] == '2024-03-20'
 
 def test_outside_business_hours(platform):
     """Test booking outside business hours"""

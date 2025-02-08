@@ -10,7 +10,7 @@ class PlatformFactory:
     }
     
     @classmethod
-    def get_platform(cls, platform_name: Optional[str]) -> BookingPlatform:
+    def get_platform(cls, platform_name: Optional[str], test_mode: bool = False) -> BookingPlatform:
         """
         Get an instance of the requested platform
         
@@ -37,4 +37,4 @@ class PlatformFactory:
                 f"Unsupported platform: {platform_name}. "
                 f"Supported platforms are: {supported}"
             )
-        return platform_class() 
+        return platform_class(test_mode=test_mode) 

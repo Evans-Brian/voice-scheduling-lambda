@@ -190,5 +190,70 @@ def test_reschedule_appointment():
     assert result['success'] == True
     assert 'message' in result
 
+def test_combine_events_empty():
+    """Test combining empty slot list"""
+    platform = MockPlatform()
+    result = platform._combine_events([], "2024-03-20")
+    assert result == "No available times found"
+
+def test_combine_events_single_slot():
+    """Test combining single slot"""
+    platform = MockPlatform()
+    slots = [
+        {'start': '09:00', 'end': '09:30'}
+    ]
+    result = platform._combine_events(slots, "2024-03-20")
+    assert result == "Available March 20: 9AM"
+
+def test_combine_events_non_consecutive():
+    """Test combining non-consecutive slots"""
+    platform = MockPlatform()
+    slots = [
+        {'start': '09:00', 'end': '09:30'},
+        {'start': '10:00', 'end': '10:30'},
+        {'start': '11:00', 'end': '11:30'}
+    ]
+    result = platform._combine_events(slots, "2024-03-20")
+    assert result == "Available March 20: 9AM, 10AM, 11AM"
+
+def test_combine_events_consecutive():
+    """Test combining consecutive slots"""
+    platform = MockPlatform()
+    slots = [
+        {'start': '10:00', 'end': '10:30'},
+        {'start': '10:30', 'end': '11:00'},
+        {'start': '11:00', 'end': '11:30'},
+        {'start': '11:30', 'end': '12:00'}
+    ]
+    result = platform._combine_events(slots, "2024-03-20")
+    assert result == "Available March 20: 10AM to 11:30AM"
+
+def test_combine_events_mixed():
+    """Test combining mix of consecutive and non-consecutive slots"""
+    platform = MockPlatform()
+    slots = [
+        {'start': '09:00', 'end': '09:30'},
+        {'start': '10:00', 'end': '10:30'},
+        {'start': '10:30', 'end': '11:00'},
+        {'start': '11:00', 'end': '11:30'},
+        {'start': '11:30', 'end': '12:00'},
+        {'start': '14:00', 'end': '14:30'}
+    ]
+    result = platform._combine_events(slots, "2024-03-20")
+    assert result == "Available March 20: 9AM, 10AM to 11:30AM, 2PM"
+
+def test_combine_events_pm_times():
+    """Test combining slots in PM time"""
+    platform = MockPlatform()
+    slots = [
+        {'start': '13:00', 'end': '13:30'},
+        {'start': '13:30', 'end': '14:00'},
+        {'start': '14:00', 'end': '14:30'},
+        {'start': '14:30', 'end': '15:00'},
+        {'start': '16:00', 'end': '16:30'}
+    ]
+    result = platform._combine_events(slots, "2024-03-20")
+    assert result == "Available March 20: 1PM to 2:30PM, 4PM"
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '-s'])
