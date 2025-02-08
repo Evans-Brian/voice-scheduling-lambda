@@ -168,7 +168,6 @@ def test_get_availability_no_conflicts(platform, mock_service):
     result = platform.get_availability(duration=30, date="2024-03-20")
     assert result['success'] == True
     assert result['slots'] == "Available March 20: 9AM to 4:30PM"
-    assert result['date'] == '2024-03-20'
 
 def test_get_availability_with_conflicts(platform, mock_service):
     """Test getting available slots with existing appointments"""
@@ -201,7 +200,6 @@ def test_get_availability_with_conflicts(platform, mock_service):
     
     # Check that the string contains expected format
     assert result['slots'] == "Available March 20: 10AM to 1:30PM, 3PM to 4:30PM"
-    assert result['date'] == '2024-03-20'
 
 def test_outside_business_hours(platform):
     """Test booking outside business hours"""

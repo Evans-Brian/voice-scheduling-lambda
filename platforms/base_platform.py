@@ -46,7 +46,6 @@ class BookingPlatform(ABC):
                 success: bool
                 message: str
                 available_slots: List[dict] (if failure)
-                date: str (if failure) in format 'YYYY-MM-DD'
         """
         pass
     
@@ -65,11 +64,7 @@ class BookingPlatform(ABC):
             dict with:
                 success: bool
                 message: str
-                slots: List of available time slots (if success)
-                    Each slot has:
-                        start: String time in format 'HH:MM'
-                        end: String time in format 'HH:MM'
-                date: String date in format 'YYYY-MM-DD' (if success)
+                slots: List of available time slots in natural language
         """
         pass
     

@@ -140,7 +140,6 @@ def test_book_appointment_conflict_integration(caplog):
     # Verify conflict handling
     assert result2['success'] == False, "Second booking should have failed"
     assert 'available_slots' in result2, "No available_slots in conflict response"
-    assert 'date' in result2, "No date in conflict response"
     
     # Clean up
     try:

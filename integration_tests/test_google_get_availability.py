@@ -50,7 +50,6 @@ def test_get_availability():
     body = json.loads(result['body']) if isinstance(result['body'], str) else result['body']
     assert body['success'] == True, f"Getting availability failed: {body.get('message', 'No error message')}"
     assert 'slots' in body, "No slots in response"
-    assert 'date' in body, "No date in response"
     assert body['slots'] == 'Available February 08: 9AM to 4:30PM'
     
     
@@ -67,7 +66,7 @@ def test_get_availability_specific_date():
     
     # Get availability for specific date
     event = {
-        'get_availability': 'date',
+        'get_availability': '',
         'google': '', 
         'date': target_date
     }
@@ -80,16 +79,12 @@ def test_get_availability_specific_date():
     body = json.loads(result['body']) if isinstance(result['body'], str) else result['body']
     assert body['success'] == True, f"Getting availability failed: {body.get('message', 'No error message')}"
     assert 'slots' in body, "No slots in response"
-    assert 'date' in body, "No date in response"
-    assert body['date'] == target_date, f"Wrong date returned. Expected {target_date}, got {body['date']}"
     
     # Verify slot format if any slots are available
-    print('aaaa')
-    print(body['slots'])
     assert body['slots'] == 'Available February 09: 9AM to 4:30PM'
     
     logger.info("=== Specific Date Availability Test Passed ===\n")
 
 if __name__ == '__main__':
     test_get_availability()
-    test_get_specific_date_availability() 
+    test_get_availability_specific_date() 

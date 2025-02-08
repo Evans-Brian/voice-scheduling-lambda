@@ -63,10 +63,7 @@ class GoogleCalendarPlatform(BookingPlatform):
             dict with:
                 success: bool
                 message: str
-                event_id: str (if success)
-                event_link: str (if success)
                 available_slots: List[dict] (if failure)
-                date: str (if failure) in format 'YYYY-MM-DD'
         """
         # Parse the timestamp (assumed to be in local time)
         start_time = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S')
@@ -102,7 +99,6 @@ class GoogleCalendarPlatform(BookingPlatform):
                     'success': False,
                     'message': 'Time slot is already booked',
                     'available_slots': available_times['slots'],
-                    'date': available_times['date']
                 }
         
         # Create the event
@@ -172,7 +168,6 @@ class GoogleCalendarPlatform(BookingPlatform):
                 return {
                     'success': True,
                     'slots': available_times['slots'],
-                    'date': check_date.strftime('%Y-%m-%d')
                 }
             
             # If no slots found and no specific date was given, check next day
@@ -182,8 +177,7 @@ class GoogleCalendarPlatform(BookingPlatform):
         return {
             'success': False,
             'message': 'No available slots found in the next two weeks',
-            'slots': [],
-            'date': None
+            'slots': []
         }
 
     def get_customer_appointments(self, phone_number: str) -> dict:
