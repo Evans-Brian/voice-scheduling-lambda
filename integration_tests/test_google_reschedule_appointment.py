@@ -70,7 +70,7 @@ def test_reschedule_appointment_integration():
         reschedule_event = {
             'reschedule_appointment': 'update',
             'google': '',  # Changed from platform
-            'name': "Integration Test Appointment",
+            'name': "Reschedule Integration Test Appointment",
             'phone_number': "+1234567890",
             'old_timestamp': original_timestamp,
             'new_timestamp': new_timestamp
@@ -106,28 +106,46 @@ def test_reschedule_appointment_integration():
         logger.info("Cleaning up test appointments...")
         # Clean up: Cancel the appointment (try both times just in case)
         cancel_event = {
-            'cancel_appointment': 'delete',
-            'google': '',  # Changed from platform
-            'timestamp': original_timestamp,
-            'phone_number': "+1234567890"
+            'body': json.dumps({
+                'args': {
+                    'cancel_appointment': '',
+                    'google': '',
+                    'timestamp': original_timestamp,
+                    'phone_number': '+1234567890'
+                }
+            })
         }
         
-        # Try to cancel original appointment
-        try:
-            cancel_result = lambda_handler(cancel_event, None)
-            cancel_body = json.loads(cancel_result['body']) if isinstance(cancel_result['body'], str) else cancel_result['body']
-            if cancel_body.get('success'):
-                logger.info("Successfully cleaned up original appointment")
-            else:
-                logger.warning(f"Original appointment cleanup failed: {cancel_body.get('message')}")
-        except Exception as e:
-            logger.warning(f"Failed to clean up original appointment: {str(e)}")
+        cancel_result = lambda_handler(cancel_event, None)
+        if isinstance(cancel_result['body'], str):
+            cancel_body = json.loads(cancel_result['body'])
+        else:
+            cancel_body = cancel_result['body']
+            
+        if cancel_body.get('success'):
+            logger.info("Successfully cleaned up original appointment")
+        else:
+            logger.warning(f"Original appointment cleanup failed: {cancel_body.get('message')}")
         
-        # Try to cancel rescheduled appointment
-        cancel_event['timestamp'] = new_timestamp
+        # Clean up
         try:
+            cancel_event = {
+                'body': json.dumps({
+                    'args': {
+                        'cancel_appointment': '',
+                        'google': '',
+                        'timestamp': new_timestamp,
+                        'phone_number': '+1234567890'
+                    }
+                })
+            }
+            
             cancel_result = lambda_handler(cancel_event, None)
-            cancel_body = json.loads(cancel_result['body']) if isinstance(cancel_result['body'], str) else cancel_result['body']
+            if isinstance(cancel_result['body'], str):
+                cancel_body = json.loads(cancel_result['body'])
+            else:
+                cancel_body = cancel_result['body']
+                
             if cancel_body.get('success'):
                 logger.info("Successfully cleaned up rescheduled appointment")
             else:
