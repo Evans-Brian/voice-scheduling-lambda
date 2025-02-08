@@ -3,12 +3,18 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from platforms.platform_factory import PlatformFactory
 from platforms.base_platform import BookingPlatform
 from platforms.google_calendar import GoogleCalendarPlatform
 
-@patch('platforms.google_calendar.GoogleCalendarPlatform.__abstractmethods__', set())
+@pytest.fixture(autouse=True)
+def mock_service():
+    """Mock Google Calendar dependencies"""
+    with patch('platforms.google_calendar.get_credentials', return_value=None), \
+         patch('platforms.google_calendar.build', return_value=Mock()):
+        yield
+
 def test_get_platform_google():
     """Test getting Google Calendar platform"""
     platform = PlatformFactory.get_platform('google')
@@ -17,8 +23,7 @@ def test_get_platform_google():
     assert isinstance(platform, BookingPlatform)
     assert isinstance(platform, GoogleCalendarPlatform)
 
-@patch('platforms.google_calendar.GoogleCalendarPlatform.__abstractmethods__', set())
-def test_get_platform_case_insensitive():
+def test_get_platform_case_insensitive(mock_service):
     """Test that platform name is case insensitive"""
     platform1 = PlatformFactory.get_platform('GOOGLE')
     platform2 = PlatformFactory.get_platform('Google')

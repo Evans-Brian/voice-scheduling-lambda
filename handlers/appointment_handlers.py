@@ -69,14 +69,10 @@ def handle_get_availability(event: Dict[str, Any], platform_name: str) -> Dict[s
     # Get optional parameters
     duration = event.get('duration', 30)
     date = event.get('date')
-    timestamp = event.get('timestamp')
     
     if date:
         # If specific date is provided, use get_availability with date
         result = platform.get_availability(duration=duration, date=date)
-    elif timestamp:
-        # If timestamp is provided, use get_next_availability
-        result = platform.get_next_availability(timestamp=timestamp, duration=duration)
     else:
         # If neither is provided, get next available day
         result = platform.get_availability(duration=duration)
