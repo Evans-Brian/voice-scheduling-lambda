@@ -1,0 +1,27 @@
+{
+    "type": "object",
+    "properties": {
+      "cancel_appointment": {
+        "type": "string",
+        "description": "The value of this field is an empty string"
+      },
+      "google": {
+        "type": "string",
+        "description": "The value of this field is an empty string"
+      },
+      "timestamp": {
+        "type": "string",
+        "description": "The timestamp the customer wants to reschedule"
+      },
+      "phone_number": {
+        "type": "string",
+        "description": "{{from_number}}"
+      }
+    },
+    "required": [
+      "cancel_appointment",
+      "google",
+      "timestamp",
+      "phone_number"
+    ]
+  }

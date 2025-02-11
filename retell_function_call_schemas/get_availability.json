@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "properties": {
+      "book_appointment": {
+        "type": "get_availability",
+        "description": "The value of this field is an empty string"
+      },
+      "google": {
+        "type": "google",
+        "description": "The value of this field is an empty string"
+      }
+    },
+    "required": [
+      "get_availability",
+      "google"
+    ]
+  }
