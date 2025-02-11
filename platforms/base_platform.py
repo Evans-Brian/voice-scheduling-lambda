@@ -222,20 +222,20 @@ class BookingPlatform(ABC):
             slot_end = current_time + timedelta(minutes=duration)
             if slot_end <= end_of_day:
                 # Check if this slot overlaps with any booked slots
-                slot_start = current_time.strftime('%H:%M')
-                slot_end_str = slot_end.strftime('%H:%M')
+                candidate_start = current_time.strftime('%H:%M')
+                candidate_end = slot_end.strftime('%H:%M')
                 slot_is_available = True
                 
                 for booked_start, booked_end in booked_slots:
-                    if (slot_start >= booked_start and slot_start < booked_end) or \
-                       (slot_end_str > booked_start and slot_end_str <= booked_end):
+                    if (candidate_start >= booked_start and candidate_start < booked_end) or \
+                       (candidate_end > booked_start and candidate_end < booked_end):
                         slot_is_available = False
                         break
                 
                 if slot_is_available:
                     available_slots.append({
-                        'start': slot_start,
-                        'end': slot_end_str
+                        'start': candidate_start,
+                        'end': candidate_end
                     })
             
             current_time += timedelta(minutes=30)  # Move to next slot
