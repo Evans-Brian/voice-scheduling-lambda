@@ -233,14 +233,15 @@ def test_combine_events_mixed():
     platform = MockPlatform()
     slots = [
         {'start': '09:00', 'end': '09:30'},
-        {'start': '10:00', 'end': '10:30'},
+        {'start': '09:30', 'end': '10:00'},
         {'start': '10:30', 'end': '11:00'},
         {'start': '11:00', 'end': '11:30'},
         {'start': '11:30', 'end': '12:00'},
+        {'start': '12:00', 'end': '12:30'},
         {'start': '14:00', 'end': '14:30'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 9AM, 10AM to 11:30AM, 2PM"
+    assert result == "Available March 20: 9AM, 9:30AM, 10:30AM to 12PM, 2PM"
 
 def test_combine_events_pm_times():
     """Test combining slots in PM time"""

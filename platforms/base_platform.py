@@ -158,6 +158,7 @@ class BookingPlatform(ABC):
                 groups.append(current_group)
                 current_group = [sorted_slots[i]]
         groups.append(current_group)  # Add the last group
+        print(groups)
         
         # Format each group into a string
         time_strings = []
@@ -169,8 +170,9 @@ class BookingPlatform(ABC):
                 end = format_time(group[-1]['start'])
                 time_strings.append(f"{start} to {end}")
             else:
-                # For individual slots, just show start time
-                time_strings.append(format_time(group[0]['start']))
+                # For individual or small groups, show each slot's start time
+                for slot in group:
+                    time_strings.append(format_time(slot['start']))
         
         # Combine all times with commas
         times = ", ".join(time_strings)
@@ -227,8 +229,15 @@ class BookingPlatform(ABC):
                 slot_is_available = True
                 
                 for booked_start, booked_end in booked_slots:
+                    # Check all possible overlap cases:
+                    # 1. Candidate starts during booked slot
+                    # 2. Candidate ends during booked slot
+                    # 3. Candidate contains booked slot
+                    # 4. Booked slot contains candidate
                     if (candidate_start >= booked_start and candidate_start < booked_end) or \
-                       (candidate_end > booked_start and candidate_end < booked_end):
+                       (candidate_end > booked_start and candidate_end <= booked_end) or \
+                       (candidate_start <= booked_start and candidate_end >= booked_end) or \
+                       (booked_start <= candidate_start and booked_end >= candidate_end):
                         slot_is_available = False
                         break
                 
