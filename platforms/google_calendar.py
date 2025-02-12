@@ -208,15 +208,25 @@ class GoogleCalendarPlatform(BookingPlatform):
             ).execute()
 
             appointments = []
+            message = "The caller has no appointments booked."
             for event in events_result.get('items', []):
                 # Check if event description contains the phone number in the specific format
                 if 'description' in event and f'Phone: {phone_number}' in event.get('description', ''):
-                    appointments.append(event['start']['dateTime'].replace('Z', ''),)
+                    # Parse and format the timestamp
+                    dt = datetime.fromisoformat(event['start']['dateTime'].replace('Z', '+00:00'))
+                    formatted_time = dt.strftime('%B %d at %I:%M%p')  # e.g. "March 20 at 9:00AM"
+                    appointments.append(formatted_time)
+
+            if appointments:
+                message = "The caller has appointments booked for "
+                for appointment in appointments:
+                    message += f"{appointment}, "
+                message = message.rstrip(', ')  # Remove trailing comma and space
 
             return {
                 'success': True,
-                'message': 'Appointments retrieved successfully',
-                'appointments': appointments
+                'message': message,
+                'appointments': message
             }
 
         except Exception as e:

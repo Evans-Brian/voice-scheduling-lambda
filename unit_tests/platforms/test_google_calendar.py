@@ -106,8 +106,7 @@ def test_get_customer_appointments(platform, mock_service):
     assert result['success'] == True
     assert 'appointments' in result
     appointments = result['appointments']
-    assert len(appointments) == 1
-    assert appointments[0] == '2024-03-20T09:00:00+00:00'
+    assert appointments == 'The caller has appointments booked for March 20 at 09:00AM'
 
 
 def test_cancel_appointment_success(platform, mock_service):
