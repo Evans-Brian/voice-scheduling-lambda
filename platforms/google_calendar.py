@@ -211,11 +211,7 @@ class GoogleCalendarPlatform(BookingPlatform):
             for event in events_result.get('items', []):
                 # Check if event description contains the phone number in the specific format
                 if 'description' in event and f'Phone: {phone_number}' in event.get('description', ''):
-                    appointments.append({
-                        'start': event['start']['dateTime'].replace('Z', ''),
-                        'end': event['end']['dateTime'].replace('Z', ''),
-                        'name': event.get('summary', '')
-                    })
+                    appointments.append(event['start']['dateTime'].replace('Z', ''),)
 
             return {
                 'success': True,

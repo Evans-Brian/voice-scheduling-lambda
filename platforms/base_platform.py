@@ -163,7 +163,7 @@ class BookingPlatform(ABC):
         # Format each group into a string
         time_strings = []
         for group in groups:
-            if len(group) >= 4:
+            if len(group) >= 3:
                 # For 4 or more consecutive slots, show range
                 start = format_time(group[0]['start'])
                 # Get the start time of last slot
