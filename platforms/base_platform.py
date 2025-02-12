@@ -158,7 +158,6 @@ class BookingPlatform(ABC):
                 groups.append(current_group)
                 current_group = [sorted_slots[i]]
         groups.append(current_group)  # Add the last group
-        print(groups)
         
         # Format each group into a string
         time_strings = []

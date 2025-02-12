@@ -126,13 +126,13 @@ class GoogleCalendarPlatform(BookingPlatform):
         }
 
     def get_availability(self, duration: int = 30, date: str = None) -> dict:
-        """Get all available time slots for a specific date or next available day."""
+        """Get all available time slots for a specific date or next available day."""        
         if date:
-            # Use provided date
             check_date = datetime.strptime(date, '%Y-%m-%d')
         else:
-            # Start with tomorrow
-            check_date = datetime.now() + timedelta(days=1)
+            est = pytz.timezone('America/New_York')
+            now = datetime.now(est).replace(tzinfo=None)
+            check_date = now + timedelta(days=1)
         
         max_days_to_check = 14  # Don't look more than 2 weeks ahead
         days_checked = 0
@@ -140,6 +140,7 @@ class GoogleCalendarPlatform(BookingPlatform):
         while days_checked < max_days_to_check:
             # Get events for the day
             start_of_day = check_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            print(f"Getting availability for date {start_of_day}")
             end_of_day = check_date.replace(hour=23, minute=59, second=59, microsecond=999999)
             
             events_result = self.service.events().list(
@@ -346,4 +347,5 @@ class GoogleCalendarPlatform(BookingPlatform):
             return {
                 'success': False,
                 'message': f'Error rescheduling appointment: {str(e)}'
-            } 
+            }
+
