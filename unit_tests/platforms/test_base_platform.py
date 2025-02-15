@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from platforms.base_platform import BookingPlatform
 from constants import DEFAULT_START_HOUR, DEFAULT_END_HOUR
 from unittest.mock import patch, Mock
+import pytz
 
 class MockPlatform(BookingPlatform):
     """Mock platform for testing base class functionality"""
@@ -272,35 +273,28 @@ def test_get_available_times_filters_past_dates():
             "2024-03-19T10:00:00",  # Yesterday
             {'bookedEvents': {'items': []}}
         )
-        assert past_result['message'] == "No available times found on Tuesday, March 19"
-
-def test_get_available_times_filters_past_dates():
-    """Test that get_available_times shows no slots for past dates"""
-    platform = MockPlatform()
-    with patch('platforms.base_platform.datetime') as mock_dt:
-        real_now = datetime(2024, 3, 20, 10, 0)
-        mock_now = Mock(wraps=real_now)
-        mock_now.date.return_value = real_now.date()
-        mock_now.replace.return_value = real_now
-        mock_dt.now.return_value = mock_now
-        mock_dt.strptime = datetime.strptime
-        
-        past_result = platform.get_available_times(
-            "2024-03-19T10:00:00",  # Yesterday
-            {'bookedEvents': {'items': []}}
-        )
         assert past_result['message'] == "Requested date is before today. Can you please provide a date on or after today?"
 
 def test_get_available_times_filters_past_hours_today():
     """Test that get_available_times only shows future times for today"""
     platform = MockPlatform()
-    with patch('platforms.base_platform.datetime') as mock_dt:
-        real_now = datetime(2024, 3, 20, 10, 0)
-        mock_now = Mock(wraps=real_now)
-        mock_now.date.return_value = real_now.date()
-        mock_now.replace.return_value = real_now
-        mock_dt.now.return_value = mock_now
-        mock_dt.strptime = datetime.strptime
+    
+    fixed_date = datetime(2024, 3, 20, 10, 0)
+    fixed_date_eastern = pytz.timezone('America/New_York').localize(fixed_date)
+    
+    with patch('datetime.datetime') as mock_datetime, \
+         patch('platforms.base_platform.datetime') as mock_platform_dt, \
+         patch('platforms.google_calendar.datetime') as mock_google_dt:
+        
+        # Configure all the mocks to return the same fixed date
+        mock_datetime.now.return_value = fixed_date_eastern
+        mock_datetime.strptime.side_effect = datetime.strptime
+        
+        mock_platform_dt.now.return_value = fixed_date_eastern
+        mock_platform_dt.strptime.side_effect = datetime.strptime
+        
+        mock_google_dt.now.return_value = fixed_date_eastern
+        mock_google_dt.strptime.side_effect = datetime.strptime
         
         today_result = platform.get_available_times(
             "2024-03-20T10:00:00",

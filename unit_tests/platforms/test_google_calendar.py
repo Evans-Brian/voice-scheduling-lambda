@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 from platforms.google_calendar import GoogleCalendarPlatform
 from constants import CALENDAR_ID, DEFAULT_START_HOUR, DEFAULT_END_HOUR
+import pytz
 
 @pytest.fixture
 def mock_service():
@@ -231,4 +232,66 @@ def test_get_availability_today_filters_past_times(platform, mock_service):
         
         assert result['success'] == True
         # Should only show times from 3:00 PM to 4:30 PM
-        assert result['message'] == "Available Wednesday, March 20: 3PM to 4:30PM" 
+        assert result['message'] == "Available Wednesday, March 20: 3PM to 4:30PM"
+
+def test_get_availability_no_date_provided(platform, mock_service):
+    """Test getting available slots when no date is provided (should default to today)"""
+    # Mock current time to be 9:30 AM on March 20, 2024
+    fixed_date = datetime(2024, 3, 20, 9, 30)
+    fixed_date_eastern = pytz.timezone('America/New_York').localize(fixed_date)
+    
+    with patch('datetime.datetime') as mock_datetime, \
+         patch('platforms.base_platform.datetime') as mock_platform_dt, \
+         patch('platforms.google_calendar.datetime') as mock_google_dt:
+        
+        # Configure all the mocks to return the same fixed date
+        mock_datetime.now.return_value = fixed_date_eastern
+        mock_datetime.strptime.side_effect = datetime.strptime
+        
+        mock_platform_dt.now.return_value = fixed_date_eastern
+        mock_platform_dt.strptime.side_effect = datetime.strptime
+        
+        mock_google_dt.now.return_value = fixed_date_eastern
+        mock_google_dt.strptime.side_effect = datetime.strptime
+        
+        # Mock no existing appointments
+        events = Mock()
+        events.list.return_value.execute.return_value = {'items': []}
+        mock_service.events.return_value = events
+        
+        result = platform.get_availability(duration=30)  # No date provided
+        
+        assert result['success'] == True
+        # Should show times from 10:00 AM onwards (since current time is 9:30 AM)
+        assert result['message'] == "Available Wednesday, March 20: 10AM to 4:30PM" 
+
+def test_get_availability_today_given_as_date(platform, mock_service):
+    """Test getting available slots when no date is provided (should default to today)"""
+    # Mock current time to be 9:30 AM on March 20, 2024
+    fixed_date = datetime(2024, 3, 20, 9, 30)
+    fixed_date_eastern = pytz.timezone('America/New_York').localize(fixed_date)
+    
+    with patch('datetime.datetime') as mock_datetime, \
+         patch('platforms.base_platform.datetime') as mock_platform_dt, \
+         patch('platforms.google_calendar.datetime') as mock_google_dt:
+        
+        # Configure all the mocks to return the same fixed date
+        mock_datetime.now.return_value = fixed_date_eastern
+        mock_datetime.strptime.side_effect = datetime.strptime
+        
+        mock_platform_dt.now.return_value = fixed_date_eastern
+        mock_platform_dt.strptime.side_effect = datetime.strptime
+        
+        mock_google_dt.now.return_value = fixed_date_eastern
+        mock_google_dt.strptime.side_effect = datetime.strptime
+        
+        # Mock no existing appointments
+        events = Mock()
+        events.list.return_value.execute.return_value = {'items': []}
+        mock_service.events.return_value = events
+        
+        result = platform.get_availability(duration=30, date="2024-03-20")  # No date provided
+        
+        assert result['success'] == True
+        # Should show times from 10:00 AM onwards (since current time is 9:30 AM)
+        assert result['message'] == "Available Wednesday, March 20: 10AM to 4:30PM" 
