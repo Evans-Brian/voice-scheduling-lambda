@@ -132,7 +132,7 @@ class GoogleCalendarPlatform(BookingPlatform):
         else:
             est = pytz.timezone('America/New_York')
             now = datetime.now(est).replace(tzinfo=None)
-            date_to_check = now + timedelta(days=1)
+            date_to_check = now
         
         max_days_to_check = 30  # Don't look more than 1 month ahead
         days_checked = 0

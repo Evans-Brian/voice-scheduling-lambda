@@ -209,4 +209,26 @@ def test_outside_business_hours(platform):
     )
     
     assert result['success'] == False
-    assert 'between 9:00 and 17:00' in result['message'].lower() 
+    assert 'between 9:00 and 17:00' in result['message'].lower()
+
+def test_get_availability_today_filters_past_times(platform, mock_service):
+    """Test getting available slots for today filters out past times"""
+    # Mock current time to be 2:30 PM
+    with patch('platforms.base_platform.datetime') as mock_dt:
+        real_now = datetime(2024, 3, 20, 14, 30)  # 2:30 PM
+        mock_now = Mock(wraps=real_now)
+        mock_now.date.return_value = real_now.date()
+        mock_now.replace.return_value = real_now
+        mock_dt.now.return_value = mock_now
+        mock_dt.strptime = datetime.strptime
+        
+        # Mock no existing appointments
+        events = Mock()
+        events.list.return_value.execute.return_value = {'items': []}
+        mock_service.events.return_value = events
+        
+        result = platform.get_availability(duration=30, date="2024-03-20")
+        
+        assert result['success'] == True
+        # Should only show times from 3:00 PM to 4:30 PM
+        assert result['message'] == "Available Wednesday, March 20: 3PM to 4:30PM" 
