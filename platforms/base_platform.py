@@ -223,11 +223,16 @@ class BookingPlatform(ABC):
         now = datetime.now(self.timezone).replace(tzinfo=None)
         today = now.date()
         
+        # If requested date is in the past, return early
+        if requested_date.date() < today:
+            return {
+                'message': f"Requested date is before today. Can you please provide a date on or after today?",
+                'date': requested_date.strftime('%Y-%m-%d'),
+            }
+        
         while current_time < end_of_day:
-            # Skip slots that are in the past or on past dates
-            if requested_date.date() < today or (requested_date.date() == today and current_time <= now):
-                print(now)
-                print(f"Skipping past slot: {current_time}")
+            # Skip slots that are in the past for today
+            if requested_date.date() == today and current_time <= now:
                 current_time += timedelta(minutes=30)
                 continue
                 

@@ -274,6 +274,23 @@ def test_get_available_times_filters_past_dates():
         )
         assert past_result['message'] == "No available times found on Tuesday, March 19"
 
+def test_get_available_times_filters_past_dates():
+    """Test that get_available_times shows no slots for past dates"""
+    platform = MockPlatform()
+    with patch('platforms.base_platform.datetime') as mock_dt:
+        real_now = datetime(2024, 3, 20, 10, 0)
+        mock_now = Mock(wraps=real_now)
+        mock_now.date.return_value = real_now.date()
+        mock_now.replace.return_value = real_now
+        mock_dt.now.return_value = mock_now
+        mock_dt.strptime = datetime.strptime
+        
+        past_result = platform.get_available_times(
+            "2024-03-19T10:00:00",  # Yesterday
+            {'bookedEvents': {'items': []}}
+        )
+        assert past_result['message'] == "Requested date is before today. Can you please provide a date on or after today?"
+
 def test_get_available_times_filters_past_hours_today():
     """Test that get_available_times only shows future times for today"""
     platform = MockPlatform()
