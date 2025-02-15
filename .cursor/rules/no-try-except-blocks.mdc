@@ -1,0 +1,7 @@
+---
+description: No try except blocks
+globs: 
+---
+
+# Your rule content
+When writing new code, do not include try except blocks unless it's in the context of adding a replay.
