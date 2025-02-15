@@ -203,7 +203,7 @@ def test_combine_events_single_slot():
         {'start': '09:00', 'end': '09:30'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 9AM"
+    assert result == "9AM"
 
 def test_combine_events_non_consecutive():
     """Test combining non-consecutive slots"""
@@ -214,7 +214,7 @@ def test_combine_events_non_consecutive():
         {'start': '11:00', 'end': '11:30'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 9AM, 10AM, 11AM"
+    assert result == "9AM, 10AM, 11AM"
 
 def test_combine_events_consecutive():
     """Test combining consecutive slots"""
@@ -226,7 +226,7 @@ def test_combine_events_consecutive():
         {'start': '11:30', 'end': '12:00'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 10AM to 11:30AM"
+    assert result == "10AM to 11:30AM"
 
 def test_combine_events_mixed():
     """Test combining mix of consecutive and non-consecutive slots"""
@@ -241,7 +241,7 @@ def test_combine_events_mixed():
         {'start': '14:00', 'end': '14:30'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 9AM, 9:30AM, 10:30AM to 12PM, 2PM"
+    assert result == "9AM, 9:30AM, 10:30AM to 12PM, 2PM"
 
 def test_combine_events_pm_times():
     """Test combining slots in PM time"""
@@ -254,7 +254,7 @@ def test_combine_events_pm_times():
         {'start': '16:00', 'end': '16:30'}
     ]
     result = platform._combine_events(slots, "2024-03-20")
-    assert result == "Available March 20: 1PM to 2:30PM, 4PM"
+    assert result == "1PM to 2:30PM, 4PM"
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '-s'])

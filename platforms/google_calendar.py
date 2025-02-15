@@ -98,7 +98,7 @@ class GoogleCalendarPlatform(BookingPlatform):
                 return {
                     'success': False,
                     'message': 'Time slot is already booked',
-                    'available_slots': available_times['slots'],
+                    'otherAvailableTimes': available_times['message'],
                 }
         
         # Create the event
@@ -128,20 +128,20 @@ class GoogleCalendarPlatform(BookingPlatform):
     def get_availability(self, duration: int = 30, date: str = None) -> dict:
         """Get all available time slots for a specific date or next available day."""        
         if date:
-            check_date = datetime.strptime(date, '%Y-%m-%d')
+            date_to_check = datetime.strptime(date, '%Y-%m-%d')
         else:
             est = pytz.timezone('America/New_York')
             now = datetime.now(est).replace(tzinfo=None)
-            check_date = now + timedelta(days=1)
+            date_to_check = now + timedelta(days=1)
         
-        max_days_to_check = 14  # Don't look more than 2 weeks ahead
+        max_days_to_check = 30  # Don't look more than 1 month ahead
         days_checked = 0
         
         while days_checked < max_days_to_check:
             # Get events for the day
-            start_of_day = check_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_of_day = date_to_check.replace(hour=0, minute=0, second=0, microsecond=0)
             print(f"Getting availability for date {start_of_day}")
-            end_of_day = check_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            end_of_day = date_to_check.replace(hour=23, minute=59, second=59, microsecond=999999)
             
             events_result = self.service.events().list(
                 calendarId=CALENDAR_ID,
@@ -152,32 +152,38 @@ class GoogleCalendarPlatform(BookingPlatform):
             ).execute()
             
             # Get available times using base platform method
-            timestamp = check_date.replace(
+            timestamp = date_to_check.replace(
                 hour=DEFAULT_START_HOUR,
                 minute=0,
                 second=0
             ).strftime('%Y-%m-%dT%H:%M:%S')
             
-            available_times = self.get_available_times(
+            availability_object = self.get_available_times(
                 timestamp,
                 {'bookedEvents': events_result},
                 duration
             )
 
-            # If we found available slots or we were given a specific date, return the result
-            if available_times['slots'] or date:
+            # If no slots found and no specific date was given, check next day
+            date_to_check += timedelta(days=1)
+            days_checked += 1
+
+            # If we found available times
+            if availability_object['message'] != "No available times found":
+                # if requested date has times
+                if days_checked == 1:
+                    messsage = availability_object['message']
+                else:
+                    messsage = "Requested date unavailable, but there is availability on: " + availability_object['message']
                 return {
                     'success': True,
-                    'slots': available_times['slots'],
+                    'message': messsage,
                 }
             
-            # If no slots found and no specific date was given, check next day
-            check_date += timedelta(days=1)
-            days_checked += 1
         
         return {
             'success': False,
-            'message': 'No available slots found in the next two weeks',
+            'message': 'No available times found in the next month',
             'slots': []
         }
 

@@ -121,7 +121,6 @@ class BookingPlatform(ABC):
         
         # Format the date
         date_obj = datetime.strptime(date, '%Y-%m-%d')
-        formatted_date = date_obj.strftime('%B %d')  # e.g., "March 20"
         # Sort slots by start time
         sorted_slots = sorted(slots, key=lambda x: x['start'])
         
@@ -176,7 +175,8 @@ class BookingPlatform(ABC):
         # Combine all times with commas
         times = ", ".join(time_strings)
         
-        return f"Available {formatted_date}: {times}"
+        # Ternary operator: condition_if_true if condition else condition_if_false
+        return times
     
     def get_available_times(self, timestamp: str, booking_result: dict, duration: int = 30) -> dict:
         """
@@ -248,16 +248,24 @@ class BookingPlatform(ABC):
             
             current_time += timedelta(minutes=30)  # Move to next slot
         
+        stripped_date = requested_date.strftime('%Y-%m-%d')
         # Get available slots
         combined_slots = self._combine_events(
             available_slots, 
-            requested_date.strftime('%Y-%m-%d'),
+            stripped_date,
             duration
-        )
+        )   
+        # Convert string date back to datetime for formatting
+        date_obj = datetime.strptime(stripped_date, '%Y-%m-%d')
+        formatted_date = date_obj.strftime('%A, %B %d')  # e.g. "Monday, March 20"
+        if available_slots:
+            message = f"Available {formatted_date}: {combined_slots}"
+        else:
+            message = f"No available times found on {formatted_date}"
         
         return {
-            'slots': combined_slots,
-            'date': requested_date.strftime('%Y-%m-%d')
+            'message': message,
+            'date': requested_date.strftime('%Y-%m-%d'),
         }
     
     def reschedule_appointment(self, name: str, phone_number: str, old_timestamp: str, new_timestamp: str) -> dict:

@@ -37,3 +37,5 @@ package/
 temp_venv/
 lambda_deploy/
 deployment_package/
+
+notes*.txt
