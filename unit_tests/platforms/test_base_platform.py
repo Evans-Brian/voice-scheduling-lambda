@@ -6,6 +6,7 @@ import pytest
 from datetime import datetime, timedelta
 from platforms.base_platform import BookingPlatform
 from constants import DEFAULT_START_HOUR, DEFAULT_END_HOUR
+from unittest.mock import patch, Mock
 
 class MockPlatform(BookingPlatform):
     """Mock platform for testing base class functionality"""
@@ -193,7 +194,7 @@ def test_reschedule_appointment():
 def test_combine_events_empty():
     """Test combining empty slot list"""
     platform = MockPlatform()
-    result = platform._combine_events([], "2024-03-20")
+    result = platform._combine_events([], "2099-03-20")
     assert result == "No available times found"
 
 def test_combine_events_single_slot():
@@ -202,7 +203,7 @@ def test_combine_events_single_slot():
     slots = [
         {'start': '09:00', 'end': '09:30'}
     ]
-    result = platform._combine_events(slots, "2024-03-20")
+    result = platform._combine_events(slots, "2099-03-20")
     assert result == "9AM"
 
 def test_combine_events_non_consecutive():
@@ -213,7 +214,7 @@ def test_combine_events_non_consecutive():
         {'start': '10:00', 'end': '10:30'},
         {'start': '11:00', 'end': '11:30'}
     ]
-    result = platform._combine_events(slots, "2024-03-20")
+    result = platform._combine_events(slots, "2099-03-20")
     assert result == "9AM, 10AM, 11AM"
 
 def test_combine_events_consecutive():
@@ -225,7 +226,7 @@ def test_combine_events_consecutive():
         {'start': '11:00', 'end': '11:30'},
         {'start': '11:30', 'end': '12:00'}
     ]
-    result = platform._combine_events(slots, "2024-03-20")
+    result = platform._combine_events(slots, "2099-03-20")
     assert result == "10AM to 11:30AM"
 
 def test_combine_events_mixed():
@@ -240,7 +241,7 @@ def test_combine_events_mixed():
         {'start': '12:00', 'end': '12:30'},
         {'start': '14:00', 'end': '14:30'}
     ]
-    result = platform._combine_events(slots, "2024-03-20")
+    result = platform._combine_events(slots, "2099-03-20")
     assert result == "9AM, 9:30AM, 10:30AM to 12PM, 2PM"
 
 def test_combine_events_pm_times():
@@ -253,8 +254,42 @@ def test_combine_events_pm_times():
         {'start': '14:30', 'end': '15:00'},
         {'start': '16:00', 'end': '16:30'}
     ]
-    result = platform._combine_events(slots, "2024-03-20")
+    result = platform._combine_events(slots, "2099-03-20")
     assert result == "1PM to 2:30PM, 4PM"
+
+def test_get_available_times_filters_past_dates():
+    """Test that get_available_times shows no slots for past dates"""
+    platform = MockPlatform()
+    with patch('platforms.base_platform.datetime') as mock_dt:
+        real_now = datetime(2024, 3, 20, 10, 0)
+        mock_now = Mock(wraps=real_now)
+        mock_now.date.return_value = real_now.date()
+        mock_now.replace.return_value = real_now
+        mock_dt.now.return_value = mock_now
+        mock_dt.strptime = datetime.strptime
+        
+        past_result = platform.get_available_times(
+            "2024-03-19T10:00:00",  # Yesterday
+            {'bookedEvents': {'items': []}}
+        )
+        assert past_result['message'] == "No available times found on Tuesday, March 19"
+
+def test_get_available_times_filters_past_hours_today():
+    """Test that get_available_times only shows future times for today"""
+    platform = MockPlatform()
+    with patch('platforms.base_platform.datetime') as mock_dt:
+        real_now = datetime(2024, 3, 20, 10, 0)
+        mock_now = Mock(wraps=real_now)
+        mock_now.date.return_value = real_now.date()
+        mock_now.replace.return_value = real_now
+        mock_dt.now.return_value = mock_now
+        mock_dt.strptime = datetime.strptime
+        
+        today_result = platform.get_available_times(
+            "2024-03-20T10:00:00",
+            {'bookedEvents': {'items': []}}
+        )
+        assert today_result['message'] == "Available Wednesday, March 20: 10:30AM to 4:30PM"
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '-s'])

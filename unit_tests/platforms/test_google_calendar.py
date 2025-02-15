@@ -164,9 +164,9 @@ def test_get_availability_no_conflicts(platform, mock_service):
     events.list.return_value.execute.return_value = {'items': []}
     mock_service.events.return_value = events
     
-    result = platform.get_availability(duration=30, date="2024-03-20")
+    result = platform.get_availability(duration=30, date="2099-03-20")
     assert result['success'] == True
-    assert result['message'] == "Available Wednesday, March 20: 9AM to 4:30PM"
+    assert result['message'] == "Available Friday, March 20: 9AM to 4:30PM"
 
 def test_get_availability_with_conflicts(platform, mock_service):
     """Test getting available slots with existing appointments"""
@@ -186,7 +186,7 @@ def test_get_availability_with_conflicts(platform, mock_service):
     }
     mock_service.events.return_value = events
     
-    result = platform.get_availability(duration=30, date="2024-03-20")
+    result = platform.get_availability(duration=30, date="2099-03-20")
     
     assert result['success'] == True
     assert isinstance(result['message'], str)
@@ -198,7 +198,7 @@ def test_get_availability_with_conflicts(platform, mock_service):
             f"Found conflicting time {conflict_time} in available slots: {result['slots']}"
     
     # Check that the string contains expected format
-    assert result['message'] == "Available Wednesday, March 20: 10AM to 1:30PM, 3PM to 4:30PM"
+    assert result['message'] == "Available Friday, March 20: 10AM to 1:30PM, 3PM to 4:30PM"
 
 def test_outside_business_hours(platform):
     """Test booking outside business hours"""

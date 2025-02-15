@@ -219,7 +219,18 @@ class BookingPlatform(ABC):
             microsecond=0
         )
         
+        # Get current time in platform's timezone (Eastern)
+        now = datetime.now(self.timezone).replace(tzinfo=None)
+        today = now.date()
+        
         while current_time < end_of_day:
+            # Skip slots that are in the past or on past dates
+            if requested_date.date() < today or (requested_date.date() == today and current_time <= now):
+                print(now)
+                print(f"Skipping past slot: {current_time}")
+                current_time += timedelta(minutes=30)
+                continue
+                
             slot_end = current_time + timedelta(minutes=duration)
             if slot_end <= end_of_day:
                 # Check if this slot overlaps with any booked slots
