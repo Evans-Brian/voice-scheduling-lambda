@@ -228,7 +228,7 @@ def test_combine_events_consecutive():
         {'start': '11:30', 'end': '12:00'}
     ]
     result = platform._combine_events(slots, "2099-03-20")
-    assert result == "10AM to 11:30AM"
+    assert result == "from 10AM to 11:30AM"
 
 def test_combine_events_mixed():
     """Test combining mix of consecutive and non-consecutive slots"""
@@ -243,7 +243,7 @@ def test_combine_events_mixed():
         {'start': '14:00', 'end': '14:30'}
     ]
     result = platform._combine_events(slots, "2099-03-20")
-    assert result == "9AM, 9:30AM, 10:30AM to 12PM, 2PM"
+    assert result == "9AM, 9:30AM, from 10:30AM to 12PM, 2PM"
 
 def test_combine_events_pm_times():
     """Test combining slots in PM time"""
@@ -256,7 +256,7 @@ def test_combine_events_pm_times():
         {'start': '16:00', 'end': '16:30'}
     ]
     result = platform._combine_events(slots, "2099-03-20")
-    assert result == "1PM to 2:30PM, 4PM"
+    assert result == "from 1PM to 2:30PM, 4PM"
 
 def test_get_available_times_filters_past_dates():
     """Test that get_available_times shows no slots for past dates"""
@@ -300,7 +300,7 @@ def test_get_available_times_filters_past_hours_today():
             "2024-03-20T10:00:00",
             {'bookedEvents': {'items': []}}
         )
-        assert today_result['message'] == "Available Wednesday, March 20: 10:30AM to 4:30PM"
+        assert today_result['message'] == "Available Wednesday, March 20: from 10:30AM to 4:30PM"
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '-s'])

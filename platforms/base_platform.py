@@ -166,7 +166,7 @@ class BookingPlatform(ABC):
                 start = format_time(group[0]['start'])
                 # Get the start time of last slot
                 end = format_time(group[-1]['start'])
-                time_strings.append(f"{start} to {end}")
+                time_strings.append(f"from {start} to {end}")
             else:
                 # For individual or small groups, show each slot's start time
                 for slot in group:
