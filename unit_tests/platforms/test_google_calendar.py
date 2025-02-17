@@ -61,6 +61,11 @@ def test_book_appointment_success(platform, mock_service):
 
 def test_book_appointment_conflict(platform, mock_service):
     """Test booking when time slot is already taken"""
+    # Mock current time to be March 20th, 2024
+    real_datetime = datetime
+    fixed_date = real_datetime(2024, 3, 20, 8, 0)  # 8 AM
+    fixed_date_eastern = pytz.timezone('America/New_York').localize(fixed_date)
+    
     # Mock the events().list().execute() chain to show a conflict
     events_list = Mock()
     events_list.execute.return_value = {
@@ -77,15 +82,87 @@ def test_book_appointment_conflict(platform, mock_service):
     events.list.return_value = events_list
     mock_service.events.return_value = events
     
-    result = platform.book_appointment(
-        name="John Doe",
-        timestamp="2024-03-20T10:00:00",
-        phone_number="+1234567890",
-        duration=30
-    )
-    
+    # Create a class to mock datetime
+    class MockDateTime(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed_date_eastern if tz is None else fixed_date_eastern.astimezone(tz)
+
+    with patch('datetime.datetime', MockDateTime), \
+         patch('platforms.base_platform.datetime', MockDateTime), \
+         patch('platforms.google_calendar.datetime', MockDateTime):
+        
+        result = platform.book_appointment(
+            name="John Doe",
+            timestamp="2024-03-20T10:00:00",
+            phone_number="+1234567890",
+            duration=30
+        )
     assert result['success'] == False
-    assert 'time slot is already booked' in result['message'].lower()
+    assert result['message'] == 'Time slot is already booked'
+    assert result['otherAvailableTimes'] == 'Available Wednesday, March 20: 9AM, 9:30AM, from 10:30AM to 4:30PM'
+
+def test_book_appointment_conflict_entire_day(platform, mock_service):
+    """Test booking when time slot is already taken"""
+    # Mock current time to be March 20th, 2024
+    real_datetime = datetime
+    fixed_date = real_datetime(2024, 3, 20, 8, 0)  # 8 AM
+    fixed_date_eastern = pytz.timezone('America/New_York').localize(fixed_date)
+    
+    # Create two different return values
+    first_response = {
+        'items': [
+            {
+                'summary': 'Existing Appointment',
+                'start': {'dateTime': '2024-03-20T08:00:00-04:00'},  # Use EST timezone
+                'end': {'dateTime': '2024-03-20T20:30:00-04:00'}
+            }
+        ],
+        'timeZone': 'America/New_York'
+    }
+
+    second_response = {
+        'items': [
+            {
+                'summary': 'Existing Appointment',
+                'start': {'dateTime': '2024-03-20T08:00:00-04:00'},  # Use EST timezone
+                'end': {'dateTime': '2024-03-20T20:30:00-04:00'}
+            }
+        ],
+        'timeZone': 'America/New_York'
+    }
+    third_response = {
+        'items': [],  # Empty list for subsequent calls
+        'timeZone': 'America/New_York'
+    }
+    
+    # Mock the events().list().execute() chain with different responses
+    events_list = Mock()
+    events_list.execute.side_effect = [first_response, second_response, third_response]
+    events = Mock()
+    events.list.return_value = events_list
+    mock_service.events.return_value = events
+    
+    # Create a class to mock datetime
+    class MockDateTime(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed_date_eastern if tz is None else fixed_date_eastern.astimezone(tz)
+
+    with patch('datetime.datetime', MockDateTime), \
+         patch('platforms.base_platform.datetime', MockDateTime), \
+         patch('platforms.google_calendar.datetime', MockDateTime):
+        
+        result = platform.book_appointment(
+            name="John Doe",
+            timestamp="2024-03-20T10:00:00",
+            phone_number="+1234567890",
+            duration=30
+        )
+    assert result['success'] == False
+    assert result['message'] == 'Time slot is already booked'
+    assert result['otherAvailableTimes'] == 'Requested date unavailable, but there is availability on: Available Thursday, March 21: from 9AM to 4:30PM'
+
 
 def test_get_customer_appointments(platform, mock_service):
     """Test getting customer appointments"""

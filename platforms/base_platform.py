@@ -224,6 +224,9 @@ class BookingPlatform(ABC):
         today = now.date()
         
         # If requested date is in the past, return early
+        print('testt')
+        print(requested_date.date())
+        print(today)
         if requested_date.date() < today:
             return {
                 'message': f"Requested date is before today. Can you please provide a date on or after today?",
@@ -274,14 +277,17 @@ class BookingPlatform(ABC):
         # Convert string date back to datetime for formatting
         date_obj = datetime.strptime(stripped_date, '%Y-%m-%d')
         formatted_date = date_obj.strftime('%A, %B %d')  # e.g. "Monday, March 20"
+        availability_found = False
         if available_slots:
             message = f"Available {formatted_date}: {combined_slots}"
+            availability_found = True
         else:
             message = f"No available times found on {formatted_date}"
         
         return {
             'message': message,
             'date': requested_date.strftime('%Y-%m-%d'),
+            'availability_found': availability_found
         }
     
     def reschedule_appointment(self, name: str, phone_number: str, old_timestamp: str, new_timestamp: str) -> dict:

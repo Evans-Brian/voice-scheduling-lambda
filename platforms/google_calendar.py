@@ -94,7 +94,7 @@ class GoogleCalendarPlatform(BookingPlatform):
             event_end = self._strip_timezone(event['end']['dateTime'])
             if (start_time < event_end and end_time > event_start):
                 # Time slot is taken, get available times
-                available_times = self.get_available_times(timestamp, {'bookedEvents': events_result}, duration)
+                available_times = self.get_availability(date=timestamp, duration=duration)
                 return {
                     'success': False,
                     'message': 'Time slot is already booked',
@@ -128,10 +128,22 @@ class GoogleCalendarPlatform(BookingPlatform):
     def get_availability(self, duration: int = 30, date: str = None) -> dict:
         """Get all available time slots for a specific date or next available day."""        
         if date:
-            date_to_check = datetime.strptime(date, '%Y-%m-%d')
+            try:
+                # Try parsing as timestamp first
+                if 'T' in date:
+                    print(f"Converting timestamp {date} to date")
+                    date_to_check = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
+                else:
+                    date_to_check = datetime.strptime(date, '%Y-%m-%d')
+            except ValueError as e:
+                return {
+                    'success': False,
+                    'message': f'Invalid date format: {str(e)}. Please use YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS'
+                }
         else:
             est = pytz.timezone('America/New_York')
             now = datetime.now(est).replace(tzinfo=None)
+            print(f"No date provided, using today: {now}")
             date_to_check = now
         
         max_days_to_check = 30  # Don't look more than 1 month ahead
@@ -169,7 +181,8 @@ class GoogleCalendarPlatform(BookingPlatform):
             days_checked += 1
 
             # If we found available times
-            if availability_object['message'] != "No available times found":
+            print(f"Availability object: {availability_object}")
+            if availability_object['availability_found']:
                 # if requested date has times
                 if days_checked == 1:
                     messsage = availability_object['message']
