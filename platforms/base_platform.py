@@ -224,9 +224,6 @@ class BookingPlatform(ABC):
         today = now.date()
         
         # If requested date is in the past, return early
-        print('testt')
-        print(requested_date.date())
-        print(today)
         if requested_date.date() < today:
             return {
                 'message': f"Requested date is before today. Can you please provide a date on or after today?",
